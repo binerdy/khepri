@@ -120,6 +120,22 @@ public sealed class AndroidStorageRootService : IStorageRootService
     /// <summary>Launches the SAF folder picker and resolves the result to a path.</summary>
     internal async Task<bool> PickFolderAsync()
     {
+        var path = await PickFolderPathAsync();
+        if (path is null)
+        {
+            return false;
+        }
+
+        SaveRootPath(path);
+        return true;
+    }
+
+    /// <summary>
+    /// Launches the folder picker and returns the resolved filesystem path without
+    /// persisting it.  Returns <see langword="null"/> if the user cancelled.
+    /// </summary>
+    internal static async Task<string?> PickFolderPathAsync()
+    {
         _folderTcs = new TaskCompletionSource<global::Android.Net.Uri?>(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -133,7 +149,7 @@ public sealed class AndroidStorageRootService : IStorageRootService
         var uri = await _folderTcs.Task;
         if (uri is null)
         {
-            return false;
+            return null;
         }
 
         // Take persistable permission so the grant survives app restart
@@ -141,16 +157,15 @@ public sealed class AndroidStorageRootService : IStorageRootService
             uri,
             ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
 
-        var path = ResolveDocumentTreeUri(uri);
-        if (path is null)
-        {
-            return false;
-        }
+        return ResolveDocumentTreeUri(uri);
+    }
 
+    /// <summary>Persists <paramref name="path"/> as the storage root and creates the directory.</summary>
+    internal void SaveRootPath(string path)
+    {
         Directory.CreateDirectory(path);
         Preferences.Set(PrefKey, path);
         _cached = path;
-        return true;
     }
 
     /// <summary>Checks if All Files Access is currently granted (API 30+ only).</summary>

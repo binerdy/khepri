@@ -110,4 +110,17 @@ public partial class ProjectDetailPage : ContentPage
             _dragSource = item;
         }
     }
+
+    private async void OnFrameDrop(object? sender, DropEventArgs e)
+    {
+        if (_dragSource is null)
+            return;
+
+        if (sender is Element { BindingContext: FrameDisplayItem target } && target != _dragSource)
+        {
+            await _vm.MoveFrameAsync(_dragSource.Frame, target.Frame);
+        }
+
+        _dragSource = null;
+    }
 }

@@ -12,7 +12,7 @@ public partial class StorageSetupPage : ContentPage
 
     // Set to true after we send the user to Android Settings for All Files Access.
     // OnAppearing fires when they return and we can auto-continue.
-    private readonly bool _waitingForAllFilesAccess;
+    private bool _waitingForAllFilesAccess;
 
     public StorageSetupPage(IStorageRootService storageRoot, AppShell shell)
     {
@@ -80,6 +80,43 @@ public partial class StorageSetupPage : ContentPage
         SetStatus("Opening folder picker…");
         ActionButton.IsEnabled = false;
 
+#if ANDROID
+        var androidService = (Khepri.Platforms.Android.AndroidStorageRootService)_storageRoot;
+
+        var basePath = await Khepri.Platforms.Android.AndroidStorageRootService.PickFolderPathAsync();
+        if (basePath is null)
+        {
+            SetStatus("No folder was selected. Please try again.");
+            ActionButton.Text      = "Select Storage Folder";
+            ActionButton.IsEnabled = true;
+            return;
+        }
+
+        // Ask if the user wants to create a subfolder within the selected location
+        var subfolderName = await DisplayPromptAsync(
+            "Create Subfolder?",
+            $"Projects will be saved in:\n{basePath}\n\nEnter a subfolder name to create one, or leave blank to use this folder directly.",
+            "Use This Folder",
+            "Cancel",
+            placeholder: "Khepri",
+            initialValue: "Khepri");
+
+        // null means Cancel was tapped
+        if (subfolderName is null)
+        {
+            SetStatus("No folder was selected. Please try again.");
+            ActionButton.Text      = "Select Storage Folder";
+            ActionButton.IsEnabled = true;
+            return;
+        }
+
+        var finalPath = string.IsNullOrWhiteSpace(subfolderName)
+            ? basePath
+            : Path.Combine(basePath, subfolderName.Trim());
+
+        androidService.SaveRootPath(finalPath);
+        NavigateToShell();
+#else
         var success = await _storageRoot.RequestRootFolderAsync();
 
         if (success)
@@ -92,6 +129,7 @@ public partial class StorageSetupPage : ContentPage
             ActionButton.Text      = "Select Storage Folder";
             ActionButton.IsEnabled = true;
         }
+#endif
     }
 
 #if ANDROID
