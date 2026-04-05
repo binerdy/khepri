@@ -1,0 +1,8 @@
+Initial release of Khepri — the Swiss timelapse camera app.
+
+• Capture timelapse sequences with your camera
+• Ghost overlay for precise frame alignment
+• Review, reorder, and delete frames
+• In-app preview and H.264/MP4 export
+• Rename, clone, and organise multiple projects
+• Projects saved to a folder you choose — survives uninstall

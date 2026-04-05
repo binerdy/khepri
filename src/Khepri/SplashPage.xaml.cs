@@ -1,15 +1,21 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Khepri.Domain.Timelapse;
+
 namespace Khepri;
 
 public partial class SplashPage : ContentPage
 {
-    private readonly AppShell _shell;
+    private readonly AppShell            _shell;
+    private readonly IStorageRootService _storageRoot;
+    private readonly StorageSetupPage    _setupPage;
 
-    public SplashPage(AppShell shell)
+    public SplashPage(AppShell shell, IStorageRootService storageRoot, StorageSetupPage setupPage)
     {
-        _shell = shell;
+        _shell       = shell;
+        _storageRoot = storageRoot;
+        _setupPage   = setupPage;
         InitializeComponent();
     }
 
@@ -46,10 +52,10 @@ public partial class SplashPage : ContentPage
                 TopLine.FadeToAsync(0, 320),
                 BottomLine.FadeToAsync(0, 320));
 
-            // Hand off to the shell
+            // Hand off to the shell (or storage setup on first launch)
             if (Microsoft.Maui.Controls.Application.Current?.Windows is [{ } window, ..])
             {
-                window.Page = _shell;
+                window.Page = _storageRoot.HasRootFolder ? _shell : _setupPage;
             }
         }
         catch (TaskCanceledException) { }

@@ -9,6 +9,7 @@ namespace Khepri;
 public partial class CameraPage : ContentPage
 {
     public string? OverlayImagePath { get; set; }
+    public string?  FramesDir        { get; set; }
 
     private bool _capturing;
     private bool _cameraStarted;
@@ -90,7 +91,7 @@ public partial class CameraPage : ContentPage
                 e.Media.Seek(0, SeekOrigin.Begin);
             }
 
-            var destDir = Path.Combine(FileSystem.AppDataDirectory, "frames");
+            var destDir = FramesDir ?? Path.Combine(FileSystem.AppDataDirectory, "frames");
             Directory.CreateDirectory(destDir);
             destPath = Path.Combine(destDir, $"{Guid.NewGuid()}.jpg");
 

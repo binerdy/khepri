@@ -17,6 +17,7 @@
 param(
     [string][ValidateSet('Debug','Release')]$Configuration = 'Debug',
     [switch]$Wait,
+    [switch]$Cleanup,
     [switch]$NoBuild
 )
 
@@ -135,11 +136,13 @@ if ($deviceState -ne 'device') {
 
 Write-Ok "Device authorised."
 
-# ── 4. Uninstall old build (clears launcher icon + FastDev cache) ────────────
+# ── 4. Uninstall old build (clears FastDev assembly cache) ───────────────────
 
-Write-Step "Uninstalling previous build (if any)..."
-& $adbExe -s $serial uninstall com.binerdy.khepri 2>&1 | Out-Null
-Write-Ok "Uninstall done (or app was not installed)."
+if ($Cleanup) {
+    Write-Step "Uninstalling previous build (if any)..."
+    & $adbExe -s $serial uninstall com.binerdy.khepri 2>&1 | Out-Null
+    Write-Ok "Uninstall done (or app was not installed)."
+}
 
 # Clear logcat now so the buffer is clean before the build starts.
 # Any crash during launch will be preserved in the stream below.
@@ -163,7 +166,7 @@ if ($NoBuild) {
     Write-Step "Installing $($apk.Name) (skipping build)..."
     Write-Host ""
 
-    & $adbExe -s $serial install $apk.FullName
+    & $adbExe -s $serial install -r $apk.FullName
     if ($LASTEXITCODE -ne 0) {
         Write-Fail "adb install failed (exit code $LASTEXITCODE)."
         exit $LASTEXITCODE

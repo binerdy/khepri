@@ -15,6 +15,11 @@ public sealed class MauiCameraService : ICameraService
 {
     private static TaskCompletionSource<string?>? _tcs;
 
+    private readonly IStorageRootService _storageRoot;
+
+    public MauiCameraService(IStorageRootService storageRoot)
+        => _storageRoot = storageRoot;
+
     /// <summary>Called by CameraPage when a photo is taken or cancelled.</summary>
     public static void SetResult(string? filePath)
         => Interlocked.Exchange(ref _tcs, null)?.TrySetResult(filePath);
@@ -28,7 +33,11 @@ public sealed class MauiCameraService : ICameraService
             SetResult(null);
         });
 
-        var page = new Khepri.CameraPage { OverlayImagePath = overlayImagePath };
+        var page = new Khepri.CameraPage
+        {
+            OverlayImagePath = overlayImagePath,
+            FramesDir        = Path.Combine(_storageRoot.RootFolderPath, "frames")
+        };
         await Shell.Current.Navigation.PushModalAsync(page, animated: false);
 
         var filePath = await _tcs.Task;

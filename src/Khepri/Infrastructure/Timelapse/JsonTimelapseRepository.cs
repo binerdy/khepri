@@ -10,8 +10,8 @@ namespace Khepri.Infrastructure.Timelapse;
 /// <summary>
 /// Stores each project as a JSON sidecar next to its frame images.
 ///
-/// Layout on device:
-///   AppDataDirectory/
+/// Layout on device (inside the user-selected root folder):
+///   &lt;root&gt;/
 ///     projects/
 ///       {projectId}/
 ///         project.json      ← metadata
@@ -31,11 +31,16 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private static string ProjectsRoot => Path.Combine(FileSystem.AppDataDirectory, "projects");
+    private readonly IStorageRootService _storageRoot;
 
-    private static string ProjectDir(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
+    public JsonTimelapseRepository(IStorageRootService storageRoot)
+        => _storageRoot = storageRoot;
 
-    private static string ManifestPath(Guid id) => Path.Combine(ProjectDir(id), "project.json");
+    private string ProjectsRoot => Path.Combine(_storageRoot.RootFolderPath, "projects");
+
+    private string ProjectDir(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
+
+    private string ManifestPath(Guid id) => Path.Combine(ProjectDir(id), "project.json");
 
     public async Task<IReadOnlyList<TimelapseProject>> GetAllAsync(CancellationToken cancellationToken = default)
     {

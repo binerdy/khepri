@@ -24,6 +24,13 @@ public static class MauiProgram
 				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
 			});
 
+		// Storage root — user-selected external folder that survives uninstall
+#if ANDROID
+		builder.Services.AddSingleton<IStorageRootService, Khepri.Platforms.Android.AndroidStorageRootService>();
+#else
+		builder.Services.AddSingleton<IStorageRootService, DefaultStorageRootService>();
+#endif
+
 		// Infrastructure
 		builder.Services.AddSingleton<ITimelapseRepository, JsonTimelapseRepository>();
 		builder.Services.AddSingleton<ICameraService, MauiCameraService>();
@@ -45,6 +52,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<TimelapsePreviewPage>();
 		builder.Services.AddTransient<CameraPage>();
 		builder.Services.AddSingleton<AppShell>();
+		builder.Services.AddTransient<StorageSetupPage>();
 		builder.Services.AddTransient<SplashPage>();
 
 #if DEBUG

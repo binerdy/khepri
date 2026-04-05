@@ -149,12 +149,12 @@ TimelapseProject
     └── ActiveFilePath  : string        // derived: AlignedFilePath ?? FilePath
 ```
 
-Frames are stored as full-resolution JPEG files in app-private local storage.
+Frames are stored as full-resolution JPEG files in a **user-selected external folder** that persists across app reinstalls.
 Metadata is persisted as JSON (`project.json`) in each project's folder.
 
 **Storage layout:**
 ```
-AppDataDirectory/
+<user-selected root>/      ← chosen on first launch; survives uninstall
   projects/
     {projectId}/
       project.json
@@ -173,6 +173,7 @@ AppDataDirectory/
 - Aligned frames are stored alongside originals (`AlignedFilePath`); playback and export use `ActiveFilePath` (aligned when available).
 - All file I/O is serialised through a `SemaphoreSlim` to prevent concurrent read/write conflicts on Android.
 - All camera lifecycle operations (`StartCameraPreview`, `StopCameraPreview`) must be called on the main thread.
+- **Storage root** is selected once by the user on first launch via a dedicated `StorageSetupPage`. The chosen path is persisted in `Preferences` and reused on subsequent launches. On reinstall the user picks the same folder to recover all existing projects.
 
 ---
 
@@ -195,6 +196,7 @@ These features share no code, no data model, and no navigation flow with Timelap
 - **Feature-based folder structure**: each feature lives in its own folder/namespace and does not reference other features directly.
 - Navigation via MAUI Shell with `[QueryProperty]` on ViewModels and `Routing.RegisterRoute`.
 - Local storage only in v1; no cloud sync.
+- **Storage root**: abstracted behind `IStorageRootService`. Android impl (`AndroidStorageRootService`) uses the SAF folder picker + `MANAGE_EXTERNAL_STORAGE` (API 30+) / `WRITE_EXTERNAL_STORAGE` (API ≤29) to write to user-visible external storage. Path persisted in `Preferences`. Non-Android fallback uses `AppDataDirectory`.
 - Camera access abstracted behind `ICameraService`; implemented by `MauiCameraService` which pushes `CameraPage` modally.
 - **Central Package Management** (`Directory.Packages.props`); repo-wide analyzers enforced via `Directory.Build.targets`.
 - **Key packages**: `CommunityToolkit.Mvvm 8.4.2`, `CommunityToolkit.Maui.Camera 6.0.0`, `Microsoft.Maui.Controls 10.0.30` (pinned).

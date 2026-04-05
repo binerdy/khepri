@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Khepri.StorageSetupPage"
+             BackgroundColor="#0A0A0A"
+             Shell.NavBarIsVisible="False">
+
+    <VerticalStackLayout Spacing="0"
+                         VerticalOptions="Center"
+                         HorizontalOptions="Center"
+                         Padding="48,0">
+
+        <!-- Icon mark -->
+        <Label Text="K"
+               FontSize="72"
+               FontAttributes="Bold"
+               TextColor="White"
+               HorizontalOptions="Center"
+               Margin="0,0,0,40" />
+
+        <!-- Heading -->
+        <Label Text="Storage Access"
+               FontSize="22"
+               FontAttributes="Bold"
+               TextColor="White"
+               HorizontalOptions="Center"
+               Margin="0,0,0,16" />
+
+        <!-- Description -->
+        <Label x:Name="DescriptionLabel"
+               Text="Khepri saves your projects and photos to a folder you choose. This folder is not deleted when you uninstall the app, so you can reinstall and continue where you left off."
+               FontSize="15"
+               TextColor="#AAAAAA"
+               HorizontalTextAlignment="Center"
+               HorizontalOptions="Center"
+               LineBreakMode="WordWrap"
+               Margin="0,0,0,40" />
+
+        <!-- Primary action button -->
+        <Button x:Name="ActionButton"
+                Text="Select Storage Folder"
+                Clicked="OnActionButtonClicked"
+                BackgroundColor="White"
+                TextColor="#0A0A0A"
+                FontAttributes="Bold"
+                FontSize="15"
+                CornerRadius="4"
+                HeightRequest="52"
+                HorizontalOptions="Fill" />
+
+        <!-- Status label (shown while waiting for permission) -->
+        <Label x:Name="StatusLabel"
+               Text=""
+               FontSize="13"
+               TextColor="#AAAAAA"
+               HorizontalTextAlignment="Center"
+               HorizontalOptions="Center"
+               IsVisible="False"
+               Margin="0,20,0,0" />
+
+    </VerticalStackLayout>
+</ContentPage>
