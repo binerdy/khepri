@@ -4,11 +4,11 @@ By submitting a pull request or otherwise contributing to this project, you agre
 
 ## 1. Grant of Copyright License
 
-You retain copyright over your contribution. You grant **binerdy** (the project owner) a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute your contribution, including the right to relicense it under any license — open-source or commercial.
+You retain copyright over your contribution. You grant **Alan Keller** (the project owner) a perpetual, worldwide, non-exclusive, royalty-free, irrevocable license to reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute your contribution, including the right to relicense it under any license — open-source or commercial.
 
 ## 2. Grant of Patent License
 
-You grant **binerdy** a perpetual, worldwide, non-exclusive, royalty-free, irrevocable patent license to make, use, sell, offer for sale, import, and otherwise transfer your contribution, where such license applies only to those patent claims that you own or control and that are necessarily infringed by your contribution.
+You grant **Alan Keller** a perpetual, worldwide, non-exclusive, royalty-free, irrevocable patent license to make, use, sell, offer for sale, import, and otherwise transfer your contribution, where such license applies only to those patent claims that you own or control and that are necessarily infringed by your contribution.
 
 ## 3. Original Work
 

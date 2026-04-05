@@ -1,0 +1,84 @@
+name: Android CI / CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ── Job 1: Build & Test ─────────────────────────────────────────────────────
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install android
+
+      - name: Build (Android)
+        run: dotnet build src/Khepri/Khepri.csproj -f net10.0-android -c Release
+
+      - name: Test – Domain
+        run: dotnet test tests/Khepri.Domain.Tests/Khepri.Domain.Tests.csproj --logger "console;verbosity=minimal"
+
+      - name: Test – Application
+        run: dotnet test tests/Khepri.Application.Tests/Khepri.Application.Tests.csproj --logger "console;verbosity=minimal"
+
+  # ── Job 2: Deploy to Google Play (main branch only) ────────────────────────
+  deploy:
+    name: Deploy to Google Play
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Install MAUI Android workload
+        run: dotnet workload install android
+
+      # Decode the base64-encoded keystore stored in GitHub Secrets
+      - name: Decode keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > ${{ github.workspace }}/khepri.keystore
+
+      - name: Publish signed AAB
+        run: |
+          dotnet publish src/Khepri/Khepri.csproj \
+            -f net10.0-android \
+            -c Release \
+            -o publish-output \
+            -p:AndroidPackageFormats=aab \
+            -p:AndroidKeyStore=true \
+            -p:AndroidSigningKeyStore=${{ github.workspace }}/khepri.keystore \
+            -p:AndroidSigningKeyAlias=${{ secrets.ANDROID_KEY_ALIAS }} \
+            -p:AndroidSigningKeyPass=${{ secrets.ANDROID_KEY_PASSWORD }} \
+            -p:AndroidSigningStorePass=${{ secrets.ANDROID_STORE_PASSWORD }}
+
+      - name: Find AAB path
+        id: find-aab
+        run: echo "aab=$(find publish-output -name '*.aab' | head -1)" >> $GITHUB_OUTPUT
+
+      - name: Upload to Google Play (internal track)
+        uses: r0adkll/upload-google-play@v1.1.3
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.binerdy.khepri
+          releaseFiles: ${{ steps.find-aab.outputs.aab }}
+          track: internal
+          status: completed
+          releaseName: ${{ github.sha }}

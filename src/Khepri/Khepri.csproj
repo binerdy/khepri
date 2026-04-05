@@ -30,7 +30,7 @@
 		<ApplicationTitle>Khepri</ApplicationTitle>
 
 		<!-- App Identifier -->
-		<ApplicationId>com.companyname.khepri</ApplicationId>
+		<ApplicationId>com.binerdy.khepri</ApplicationId>
 
 		<!-- Versions -->
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
@@ -56,7 +56,7 @@
 		<!-- Images -->
 		<MauiImage Include="Resources\Images\*" />
 		<MauiImage Update="Resources\Images\dotnet_bot.png" Resize="True" BaseSize="300,185" />
-		
+
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
 
