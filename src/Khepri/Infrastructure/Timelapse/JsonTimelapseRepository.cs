@@ -21,6 +21,10 @@ namespace Khepri.Infrastructure.Timelapse;
 /// </summary>
 public sealed class JsonTimelapseRepository : ITimelapseRepository
 {
+    // Serialises all file I/O so concurrent reads/writes never contend on the
+    // same file.  A single lock is fine for a single-user mobile app.
+    private static readonly SemaphoreSlim _ioLock = new(1, 1);
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
@@ -41,28 +45,49 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
             return [];
         }
 
-        var projects = new List<TimelapseProject>();
-        foreach (var dir in Directory.GetDirectories(root))
+        await _ioLock.WaitAsync(cancellationToken);
+        try
         {
-            var manifest = Path.Combine(dir, "project.json");
-            if (!File.Exists(manifest))
+            var projects = new List<TimelapseProject>();
+            foreach (var dir in Directory.GetDirectories(root))
             {
-                continue;
-            }
+                var manifest = Path.Combine(dir, "project.json");
+                if (!File.Exists(manifest))
+                {
+                    continue;
+                }
 
-            var project = await ReadManifestAsync(manifest, cancellationToken);
-            if (project is not null)
-            {
-                projects.Add(project);
+                var project = await ReadManifestAsync(manifest, cancellationToken);
+                if (project is not null)
+                {
+                    projects.Add(project);
+                }
             }
+            return projects.OrderBy(p => p.CreatedAt).ToList();
         }
-        return projects.OrderBy(p => p.CreatedAt).ToList();
+        finally
+        {
+            _ioLock.Release();
+        }
     }
 
     public async Task<TimelapseProject?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var manifest = ManifestPath(id);
-        return File.Exists(manifest) ? await ReadManifestAsync(manifest, cancellationToken) : null;
+        if (!File.Exists(manifest))
+        {
+            return null;
+        }
+
+        await _ioLock.WaitAsync(cancellationToken);
+        try
+        {
+            return await ReadManifestAsync(manifest, cancellationToken);
+        }
+        finally
+        {
+            _ioLock.Release();
+        }
     }
 
     public async Task SaveAsync(TimelapseProject project, CancellationToken cancellationToken = default)
@@ -86,9 +111,26 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
             }).ToList()
         };
 
-        await using var stream = File.OpenWrite(ManifestPath(project.Id));
-        stream.SetLength(0);
-        await JsonSerializer.SerializeAsync(stream, dto, JsonOptions, cancellationToken);
+        // Serialize into memory first so the file is never left in a partial
+        // state and we hold the stream open for the shortest possible time.
+        using var mem = new MemoryStream();
+        await JsonSerializer.SerializeAsync(mem, dto, JsonOptions, cancellationToken);
+        var bytes = mem.ToArray();
+
+        var finalPath = ManifestPath(project.Id);
+        var tempPath  = finalPath + ".tmp";
+
+        await _ioLock.WaitAsync(cancellationToken);
+        try
+        {
+            // Write to a temp file then rename so readers never see a partial write.
+            await File.WriteAllBytesAsync(tempPath, bytes, cancellationToken);
+            File.Move(tempPath, finalPath, overwrite: true);
+        }
+        finally
+        {
+            _ioLock.Release();
+        }
     }
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
