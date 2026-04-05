@@ -101,4 +101,92 @@ public sealed class TimelapseServiceTests
         var act = async () => await _sut.RetakeLastFrameAsync(project.Id);
         await Should.ThrowAsync<InvalidOperationException>(act);
     }
+
+    // ── DeleteProject ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteProject_DeletesById()
+    {
+        var id = Guid.NewGuid();
+
+        await _sut.DeleteProjectAsync(id);
+
+        await _repository.Received(1).DeleteAsync(id, Arg.Any<CancellationToken>());
+    }
+
+    // ── DeleteFrame ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task DeleteFrame_RemovesFrameAndSavesProject()
+    {
+        var project = new TimelapseProject(Guid.NewGuid(), "Face", DateTimeOffset.UtcNow);
+        var frame = new TimelapseFrame(Guid.NewGuid(), 0, DateTimeOffset.UtcNow, "/f0.jpg");
+        project.AddFrame(frame);
+        _repository.GetByIdAsync(project.Id, Arg.Any<CancellationToken>()).Returns(project);
+
+        await _sut.DeleteFrameAsync(project.Id, frame.Id);
+
+        project.Frames.ShouldBeEmpty();
+        await _repository.Received(1).SaveAsync(project, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task DeleteFrame_WhenProjectNotFound_Throws()
+    {
+        _repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TimelapseProject?)null);
+
+        var act = async () => await _sut.DeleteFrameAsync(Guid.NewGuid(), Guid.NewGuid());
+        await Should.ThrowAsync<InvalidOperationException>(act);
+    }
+
+    // ── MoveFrame ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task MoveFrame_ReordersFrameAndSavesProject()
+    {
+        var project = new TimelapseProject(Guid.NewGuid(), "Face", DateTimeOffset.UtcNow);
+        var f0 = new TimelapseFrame(Guid.NewGuid(), 0, DateTimeOffset.UtcNow, "/f0.jpg");
+        var f1 = new TimelapseFrame(Guid.NewGuid(), 1, DateTimeOffset.UtcNow, "/f1.jpg");
+        project.AddFrame(f0);
+        project.AddFrame(f1);
+        _repository.GetByIdAsync(project.Id, Arg.Any<CancellationToken>()).Returns(project);
+
+        await _sut.MoveFrameAsync(project.Id, f0.Id, 1);
+
+        project.Frames[0].ShouldBe(f1);
+        project.Frames[1].ShouldBe(f0);
+        await _repository.Received(1).SaveAsync(project, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task MoveFrame_WhenProjectNotFound_Throws()
+    {
+        _repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TimelapseProject?)null);
+
+        var act = async () => await _sut.MoveFrameAsync(Guid.NewGuid(), Guid.NewGuid(), 0);
+        await Should.ThrowAsync<InvalidOperationException>(act);
+    }
+
+    // ── RenameProject ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task RenameProject_UpdatesNameAndSavesProject()
+    {
+        var project = new TimelapseProject(Guid.NewGuid(), "OldName", DateTimeOffset.UtcNow);
+        _repository.GetByIdAsync(project.Id, Arg.Any<CancellationToken>()).Returns(project);
+
+        await _sut.RenameProjectAsync(project.Id, "NewName");
+
+        project.Name.ShouldBe("NewName");
+        await _repository.Received(1).SaveAsync(project, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RenameProject_WhenProjectNotFound_Throws()
+    {
+        _repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((TimelapseProject?)null);
+
+        var act = async () => await _sut.RenameProjectAsync(Guid.NewGuid(), "NewName");
+        await Should.ThrowAsync<InvalidOperationException>(act);
+    }
 }

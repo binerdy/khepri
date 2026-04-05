@@ -85,6 +85,111 @@ public sealed class TimelapseProjectTests
         Should.Throw<InvalidOperationException>(act);
     }
 
+    // ── RemoveFrame ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void RemoveFrame_RemovesFrameAndReindexes()
+    {
+        var project = NewProject();
+        var f0 = NewFrame(0);
+        var f1 = NewFrame(1);
+        var f2 = NewFrame(2);
+        project.AddFrame(f0);
+        project.AddFrame(f1);
+        project.AddFrame(f2);
+
+        project.RemoveFrame(f1.Id);
+
+        project.Frames.Count.ShouldBe(2);
+        project.Frames[0].ShouldBe(f0);
+        project.Frames[1].ShouldBe(f2);
+        project.Frames[0].Index.ShouldBe(0);
+        project.Frames[1].Index.ShouldBe(1);
+    }
+
+    [Fact]
+    public void RemoveFrame_WithUnknownId_DoesNothing()
+    {
+        var project = NewProject();
+        project.AddFrame(NewFrame(0));
+
+        project.RemoveFrame(Guid.NewGuid());
+
+        project.Frames.Count.ShouldBe(1);
+    }
+
+    // ── MoveFrame ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void MoveFrame_ReordersFramesAndReindexes()
+    {
+        var project = NewProject();
+        var f0 = NewFrame(0);
+        var f1 = NewFrame(1);
+        var f2 = NewFrame(2);
+        project.AddFrame(f0);
+        project.AddFrame(f1);
+        project.AddFrame(f2);
+
+        project.MoveFrame(f0.Id, 2);
+
+        project.Frames[0].ShouldBe(f1);
+        project.Frames[1].ShouldBe(f2);
+        project.Frames[2].ShouldBe(f0);
+        project.Frames[0].Index.ShouldBe(0);
+        project.Frames[1].Index.ShouldBe(1);
+        project.Frames[2].Index.ShouldBe(2);
+    }
+
+    [Fact]
+    public void MoveFrame_WithUnknownId_DoesNothing()
+    {
+        var project = NewProject();
+        var f0 = NewFrame(0);
+        project.AddFrame(f0);
+
+        project.MoveFrame(Guid.NewGuid(), 0);
+
+        project.Frames[0].ShouldBe(f0);
+    }
+
+    [Fact]
+    public void MoveFrame_ToSamePosition_DoesNothing()
+    {
+        var project = NewProject();
+        var f0 = NewFrame(0);
+        var f1 = NewFrame(1);
+        project.AddFrame(f0);
+        project.AddFrame(f1);
+
+        project.MoveFrame(f0.Id, 0);
+
+        project.Frames[0].ShouldBe(f0);
+    }
+
+    // ── Rename ────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Rename_UpdatesName()
+    {
+        var project = NewProject("OldName");
+
+        project.Rename("NewName");
+
+        project.Name.ShouldBe("NewName");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Rename_WithBlankName_Throws(string name)
+    {
+        var project = NewProject();
+
+        var act = () => project.Rename(name);
+        Should.Throw<ArgumentException>(act);
+    }
+
     // ── IsClone ───────────────────────────────────────────────────────────────
 
     [Fact]

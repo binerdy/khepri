@@ -4,7 +4,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Khepri.Application.Timelapse;
-using Microsoft.Maui.Controls;
 
 namespace Khepri.Presentation.Timelapse;
 
