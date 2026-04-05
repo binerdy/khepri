@@ -12,6 +12,11 @@ public interface ICameraService
     /// Captures a photo and returns the local file path of the saved image.
     /// When <paramref name="overlayImagePath"/> is provided, the live viewfinder
     /// shows that image as a semi-transparent ghost to help frame the shot.
+    /// When <paramref name="destinationDir"/> is provided, the photo is saved
+    /// into that directory; otherwise the implementation chooses a default location.
     /// </summary>
-    Task<string> CapturePhotoAsync(string? overlayImagePath = null, CancellationToken cancellationToken = default);
+    Task<string> CapturePhotoAsync(
+        string? overlayImagePath = null,
+        string? destinationDir   = null,
+        CancellationToken cancellationToken = default);
 }

@@ -12,12 +12,11 @@ namespace Khepri.Infrastructure.Timelapse;
 ///
 /// Layout on device (inside the user-selected root folder):
 ///   &lt;root&gt;/
-///     projects/
-///       {projectId}/
-///         project.json      ← metadata
-///         frame_0.jpg
-///         frame_1.jpg
-///         ...
+///     {projectId}/
+///       project.json      ← metadata
+///       {guid}.jpg
+///       {guid}.jpg
+///       ...
 /// </summary>
 public sealed class JsonTimelapseRepository : ITimelapseRepository
 {
@@ -36,11 +35,11 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     public JsonTimelapseRepository(IStorageRootService storageRoot)
         => _storageRoot = storageRoot;
 
-    private string ProjectsRoot => Path.Combine(_storageRoot.RootFolderPath, "projects");
+    private string ProjectsRoot => _storageRoot.RootFolderPath;
 
-    private string ProjectDir(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
+    public string GetProjectFolderPath(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
 
-    private string ManifestPath(Guid id) => Path.Combine(ProjectDir(id), "project.json");
+    private string ManifestPath(Guid id) => Path.Combine(GetProjectFolderPath(id), "project.json");
 
     public async Task<IReadOnlyList<TimelapseProject>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -97,7 +96,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
 
     public async Task SaveAsync(TimelapseProject project, CancellationToken cancellationToken = default)
     {
-        var dir = ProjectDir(project.Id);
+        var dir = GetProjectFolderPath(project.Id);
         Directory.CreateDirectory(dir);
 
         var dto = new ProjectDto
@@ -140,7 +139,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
 
     public Task DeleteAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var dir = ProjectDir(id);
+        var dir = GetProjectFolderPath(id);
         if (Directory.Exists(dir))
         {
             Directory.Delete(dir, recursive: true);

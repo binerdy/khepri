@@ -33,4 +33,7 @@ public partial class TimelapsePreviewPage : ContentPage
 
     private async void OnExportClicked(object? sender, EventArgs e)
         => await _vm.ExportCommand.ExecuteAsync(null);
+
+    private async void OnAlignClicked(object? sender, EventArgs e)
+        => await _vm.AlignCommand.ExecuteAsync(null);
 }

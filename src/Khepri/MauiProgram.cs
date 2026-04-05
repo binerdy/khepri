@@ -34,9 +34,11 @@ public static class MauiProgram
 		// Infrastructure
 		builder.Services.AddSingleton<ITimelapseRepository, JsonTimelapseRepository>();
 		builder.Services.AddSingleton<ICameraService, MauiCameraService>();
-		builder.Services.AddSingleton<IFrameAlignmentService, MediaPipeFrameAlignmentService>();
 #if ANDROID
+		builder.Services.AddSingleton<IFrameAlignmentService, Khepri.Platforms.Android.MediaPipeFrameAlignmentService>();
 		builder.Services.AddSingleton<IVideoExportService, Khepri.Platforms.Android.VideoExportService>();
+#else
+		builder.Services.AddSingleton<IFrameAlignmentService, MediaPipeFrameAlignmentService>();
 #endif
 
 		// Application

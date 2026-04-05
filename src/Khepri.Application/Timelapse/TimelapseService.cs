@@ -38,7 +38,8 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
         var project = await repository.GetByIdAsync(projectId, cancellationToken)
             ?? throw new InvalidOperationException($"Project {projectId} not found.");
 
-        var filePath = await camera.CapturePhotoAsync(project.LatestFrame?.FilePath, cancellationToken);
+        var destDir  = repository.GetProjectFolderPath(projectId);
+        var filePath = await camera.CapturePhotoAsync(project.LatestFrame?.FilePath, destDir, cancellationToken);
         var frame = new TimelapseFrame(Guid.NewGuid(), project.Frames.Count, DateTimeOffset.UtcNow, filePath);
         project.AddFrame(frame);
         await repository.SaveAsync(project, cancellationToken);
@@ -57,7 +58,8 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
 
         // Overlay the second-last frame so the user can align against what came before.
         var overlayPath = project.Frames.Count >= 2 ? project.Frames[^2].FilePath : null;
-        var filePath = await camera.CapturePhotoAsync(overlayPath, cancellationToken);
+        var destDir     = repository.GetProjectFolderPath(projectId);
+        var filePath    = await camera.CapturePhotoAsync(overlayPath, destDir, cancellationToken);
         var frame = new TimelapseFrame(Guid.NewGuid(), project.LatestFrame.Index, DateTimeOffset.UtcNow, filePath);
         project.ReplaceLatestFrame(frame);
         await repository.SaveAsync(project, cancellationToken);

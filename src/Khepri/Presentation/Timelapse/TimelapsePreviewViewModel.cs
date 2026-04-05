@@ -4,12 +4,14 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Khepri.Application.Timelapse;
+using Khepri.Domain.Timelapse;
 
 namespace Khepri.Presentation.Timelapse;
 
 [QueryProperty(nameof(RawProjectId), "projectId")]
 public sealed partial class TimelapsePreviewViewModel(
     TimelapseService timelapseService,
+    AlignmentService alignmentService,
     IVideoExportService videoExportService) : ObservableObject
 {
     private Guid _projectId;
@@ -59,7 +61,31 @@ public sealed partial class TimelapsePreviewViewModel(
     [ObservableProperty]
     public partial double ExportProgress { get; set; }
 
-    public bool IsNotPlaying  => !IsPlaying;
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAlignButtonVisible))]
+    public partial bool IsClone { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsAlignButtonVisible))]
+    public partial bool IsAligning { get; set; }
+
+    [ObservableProperty]
+    public partial double AlignProgress { get; set; }
+
+    [ObservableProperty]
+    public partial int AlgorithmIndex { get; set; } = 0;
+
+    public string[] AlgorithmNames { get; } =
+    [
+        "Facial Landmark Warp",
+        "Phase Correlation",
+        "ORB Feature Matching",
+        "Laplacian Crop",
+    ];
+
+    public bool IsAlignButtonVisible => IsClone && !IsAligning;
+
+    public bool IsNotPlaying   => !IsPlaying;
     public bool IsNotExporting => !IsExporting;
 
     public string? CurrentFramePath
@@ -81,9 +107,10 @@ public sealed partial class TimelapsePreviewViewModel(
         }
 
         ProjectName = project.Name.ToUpperInvariant();
+        IsClone = project.IsClone;
         _framePaths = project.Frames
             .OrderBy(f => f.Index)
-            .Select(f => f.FilePath)
+            .Select(f => f.ActiveFilePath)
             .ToList();
 
         FrameCount = _framePaths.Count;
@@ -145,6 +172,47 @@ public sealed partial class TimelapsePreviewViewModel(
 
         _currentIndex = (_currentIndex + 1) % _framePaths.Count;
         CurrentFrameIndex = _currentIndex;
+    }
+
+    [RelayCommand]
+    private async Task AlignAsync(CancellationToken cancellationToken)
+    {
+        var algorithm = (AlignmentAlgorithm)AlgorithmIndex;
+        if (algorithm != AlignmentAlgorithm.FacialLandmarkWarp)
+        {
+            await Shell.Current.DisplayAlertAsync(
+                "Not Yet Available",
+                $"'{AlgorithmNames[AlgorithmIndex]}' is not yet implemented.",
+                "OK");
+            return;
+        }
+
+        StopTimer();
+        IsAligning = true;
+        AlignProgress = 0;
+
+        try
+        {
+            var progressReporter = new Progress<(int Current, int Total)>(r =>
+                AlignProgress = r.Total > 0 ? (double)r.Current / r.Total : 0);
+
+            await alignmentService.AlignProjectAsync(_projectId, progressReporter, cancellationToken);
+
+            // Reload frame paths — ActiveFilePath now points to the aligned images.
+            await LoadAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            // dismissed
+        }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlertAsync("Alignment failed", ex.Message, "OK");
+        }
+        finally
+        {
+            IsAligning = false;
+        }
     }
 
     [RelayCommand]

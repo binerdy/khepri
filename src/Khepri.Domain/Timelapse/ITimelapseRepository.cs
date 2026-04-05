@@ -13,4 +13,10 @@ public interface ITimelapseRepository
     Task<TimelapseProject?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task SaveAsync(TimelapseProject project, CancellationToken cancellationToken = default);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the filesystem path of the folder that contains all files for
+    /// the given project. The folder may not exist yet.
+    /// </summary>
+    string GetProjectFolderPath(Guid id);
 }

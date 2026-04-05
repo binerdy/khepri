@@ -24,7 +24,10 @@ public sealed class MauiCameraService : ICameraService
     public static void SetResult(string? filePath)
         => Interlocked.Exchange(ref _tcs, null)?.TrySetResult(filePath);
 
-    public async Task<string> CapturePhotoAsync(string? overlayImagePath = null, CancellationToken cancellationToken = default)
+    public async Task<string> CapturePhotoAsync(
+        string? overlayImagePath = null,
+        string? destinationDir   = null,
+        CancellationToken cancellationToken = default)
     {
         _tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
@@ -36,7 +39,7 @@ public sealed class MauiCameraService : ICameraService
         var page = new Khepri.CameraPage
         {
             OverlayImagePath = overlayImagePath,
-            FramesDir        = Path.Combine(_storageRoot.RootFolderPath, "frames")
+            FramesDir        = destinationDir ?? _storageRoot.RootFolderPath
         };
         await Shell.Current.Navigation.PushModalAsync(page, animated: false);
 

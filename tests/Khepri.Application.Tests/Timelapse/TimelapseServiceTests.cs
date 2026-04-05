@@ -66,7 +66,8 @@ public sealed class TimelapseServiceTests
     {
         var project = new TimelapseProject(Guid.NewGuid(), "Face", DateTimeOffset.UtcNow);
         _repository.GetByIdAsync(project.Id, Arg.Any<CancellationToken>()).Returns(project);
-        _camera.CapturePhotoAsync(Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns("/new-frame.jpg");
+        _repository.GetProjectFolderPath(project.Id).Returns("/root/" + project.Id);
+        _camera.CapturePhotoAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns("/new-frame.jpg");
 
         var frame = await _sut.CaptureFrameAsync(project.Id);
 
@@ -83,7 +84,8 @@ public sealed class TimelapseServiceTests
         var project = new TimelapseProject(Guid.NewGuid(), "Face", DateTimeOffset.UtcNow);
         project.AddFrame(new TimelapseFrame(Guid.NewGuid(), 0, DateTimeOffset.UtcNow, "/old.jpg"));
         _repository.GetByIdAsync(project.Id, Arg.Any<CancellationToken>()).Returns(project);
-        _camera.CapturePhotoAsync(Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns("/retake.jpg");
+        _repository.GetProjectFolderPath(project.Id).Returns("/root/" + project.Id);
+        _camera.CapturePhotoAsync(Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<CancellationToken>()).Returns("/retake.jpg");
 
         var frame = await _sut.RetakeLastFrameAsync(project.Id);
 
