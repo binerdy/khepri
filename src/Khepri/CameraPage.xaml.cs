@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using CommunityToolkit.Maui.Core;
 using Khepri.Infrastructure.Timelapse;
 
@@ -22,7 +25,9 @@ public partial class CameraPage : ContentPage
 
         var status = await Permissions.RequestAsync<Permissions.Camera>();
         if (status != PermissionStatus.Granted)
+        {
             return;
+        }
 
         await CameraPreview.StartCameraPreview(CancellationToken.None);
         _cameraStarted = true;
@@ -55,7 +60,7 @@ public partial class CameraPage : ContentPage
         if (_cameraStarted)
         {
             _cameraStarted = false;
-            _ = MainThread.InvokeOnMainThreadAsync(() => CameraPreview.StopCameraPreview());
+            _ = MainThread.InvokeOnMainThreadAsync(CameraPreview.StopCameraPreview);
         }
     }
 
@@ -64,7 +69,11 @@ public partial class CameraPage : ContentPage
 
     private async void OnCaptureClicked(object? sender, EventArgs e)
     {
-        if (_capturing) return;
+        if (_capturing)
+        {
+            return;
+        }
+
         _capturing = true;
         await CameraPreview.CaptureImage(CancellationToken.None);
         // Result delivered via MediaCaptured event.
@@ -77,7 +86,9 @@ public partial class CameraPage : ContentPage
         try
         {
             if (e.Media.CanSeek)
+            {
                 e.Media.Seek(0, SeekOrigin.Begin);
+            }
 
             var destDir = Path.Combine(FileSystem.AppDataDirectory, "frames");
             Directory.CreateDirectory(destDir);
@@ -119,7 +130,7 @@ public partial class CameraPage : ContentPage
         if (_cameraStarted)
         {
             _cameraStarted = false;
-            await MainThread.InvokeOnMainThreadAsync(() => CameraPreview.StopCameraPreview());
+            await MainThread.InvokeOnMainThreadAsync(CameraPreview.StopCameraPreview);
         }
 
         await Navigation.PopModalAsync(animated: false);

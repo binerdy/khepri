@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Khepri.Application.Timelapse;
 using Khepri.Domain.Timelapse;
 using NSubstitute;
@@ -57,7 +60,7 @@ public sealed class AlignmentServiceTests
         _aligner.AlignAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns("/aligned.jpg");
 
         var reports = new List<(int, int)>();
-        var progress = new Progress<(int, int)>(r => reports.Add(r));
+        var progress = new Progress<(int, int)>(reports.Add);
 
         await _sut.AlignProjectAsync(project.Id, progress);
 

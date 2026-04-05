@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Khepri.Domain.Timelapse;
@@ -24,26 +27,34 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private string ProjectsRoot => Path.Combine(FileSystem.AppDataDirectory, "projects");
+    private static string ProjectsRoot => Path.Combine(FileSystem.AppDataDirectory, "projects");
 
-    private string ProjectDir(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
+    private static string ProjectDir(Guid id) => Path.Combine(ProjectsRoot, id.ToString());
 
-    private string ManifestPath(Guid id) => Path.Combine(ProjectDir(id), "project.json");
+    private static string ManifestPath(Guid id) => Path.Combine(ProjectDir(id), "project.json");
 
     public async Task<IReadOnlyList<TimelapseProject>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         var root = ProjectsRoot;
         if (!Directory.Exists(root))
+        {
             return [];
+        }
 
         var projects = new List<TimelapseProject>();
         foreach (var dir in Directory.GetDirectories(root))
         {
             var manifest = Path.Combine(dir, "project.json");
-            if (!File.Exists(manifest)) continue;
+            if (!File.Exists(manifest))
+            {
+                continue;
+            }
 
             var project = await ReadManifestAsync(manifest, cancellationToken);
-            if (project is not null) projects.Add(project);
+            if (project is not null)
+            {
+                projects.Add(project);
+            }
         }
         return projects.OrderBy(p => p.CreatedAt).ToList();
     }
@@ -84,7 +95,10 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     {
         var dir = ProjectDir(id);
         if (Directory.Exists(dir))
+        {
             Directory.Delete(dir, recursive: true);
+        }
+
         return Task.CompletedTask;
     }
 
@@ -94,7 +108,10 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     {
         await using var stream = File.OpenRead(path);
         var dto = await JsonSerializer.DeserializeAsync<ProjectDto>(stream, JsonOptions, cancellationToken);
-        if (dto is null) return null;
+        if (dto is null)
+        {
+            return null;
+        }
 
         var frames = dto.Frames?.Select(f => new TimelapseFrame(
             f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath));

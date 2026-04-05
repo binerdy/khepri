@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Khepri.Domain.Timelapse;
 
 namespace Khepri.Application.Timelapse;
@@ -17,10 +20,15 @@ public sealed class AlignmentService(ITimelapseRepository repository, IFrameAlig
             ?? throw new InvalidOperationException($"Project {projectId} not found.");
 
         if (!project.IsClone)
+        {
             throw new InvalidOperationException("Alignment can only be run on cloned projects.");
+        }
 
         var frames = project.Frames;
-        if (frames.Count < 2) return;
+        if (frames.Count < 2)
+        {
+            return;
+        }
 
         var referenceFilePath = frames[0].FilePath;
 

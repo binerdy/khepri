@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 namespace Khepri.Domain.Timelapse;
 
 public sealed class TimelapseProject
@@ -37,7 +40,10 @@ public sealed class TimelapseProject
     {
         ArgumentNullException.ThrowIfNull(frame);
         if (_frames.Count == 0)
+        {
             throw new InvalidOperationException("No frames to replace.");
+        }
+
         _frames[^1] = frame;
     }
 

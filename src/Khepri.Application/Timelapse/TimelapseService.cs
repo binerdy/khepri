@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Khepri.Domain.Timelapse;
 
 namespace Khepri.Application.Timelapse;
@@ -48,7 +51,9 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
             ?? throw new InvalidOperationException($"Project {projectId} not found.");
 
         if (project.LatestFrame is null)
+        {
             throw new InvalidOperationException("No frames to retake.");
+        }
 
         var filePath = await camera.CapturePhotoAsync(project.LatestFrame.FilePath, cancellationToken);
         var frame = new TimelapseFrame(Guid.NewGuid(), project.LatestFrame.Index, DateTimeOffset.UtcNow, filePath);

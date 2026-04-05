@@ -1,9 +1,11 @@
-﻿using ObjCRuntime;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using UIKit;
 
 namespace Khepri;
 
-public class Program
+public static class Program
 {
 	// This is the main entry point of the application.
 	static void Main(string[] args)

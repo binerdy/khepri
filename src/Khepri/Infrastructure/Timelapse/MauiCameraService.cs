@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using Khepri.Domain.Timelapse;
 
 namespace Khepri.Infrastructure.Timelapse;
@@ -31,7 +34,9 @@ public sealed class MauiCameraService : ICameraService
         var filePath = await _tcs.Task;
 
         if (filePath is null)
+        {
             throw new OperationCanceledException("Photo capture was cancelled.");
+        }
 
         return filePath;
     }

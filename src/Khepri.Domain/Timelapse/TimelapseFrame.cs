@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 namespace Khepri.Domain.Timelapse;
 
 public sealed class TimelapseFrame
@@ -11,7 +14,10 @@ public sealed class TimelapseFrame
     public TimelapseFrame(Guid id, int index, DateTimeOffset capturedAt, string filePath, string? alignedFilePath = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        if (index < 0) throw new ArgumentOutOfRangeException(nameof(index), "Index must be zero or greater.");
+        if (index < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index), "Index must be zero or greater.");
+        }
 
         Id = id;
         Index = index;

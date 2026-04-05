@@ -1,4 +1,7 @@
-﻿using Khepri.Domain.Timelapse;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using Khepri.Domain.Timelapse;
 using Khepri.Presentation.Timelapse;
 
 namespace Khepri;
@@ -38,6 +41,8 @@ public partial class MainPage : ContentPage
             "Cancel",
             placeholder: "e.g. Sunrise June 2026");
         if (!string.IsNullOrWhiteSpace(name))
+        {
             await _vm.CreateProjectCommand.ExecuteAsync(name);
+        }
     }
 }

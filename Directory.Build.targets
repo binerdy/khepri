@@ -1,0 +1,13 @@
+<Project>
+  <!--
+    Analyzer packages injected into every project in the repo.
+    PrivateAssets="all" means they are build-time only and never flow to consumers.
+    IsImplicitlyDefined="true" keeps them out of package restore graphs for non-CPM tooling.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers"
+                      PrivateAssets="all" />
+    <PackageReference Include="Roslynator.Analyzers"
+                      PrivateAssets="all" />
+  </ItemGroup>
+</Project>

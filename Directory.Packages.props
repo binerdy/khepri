@@ -12,6 +12,12 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
   </ItemGroup>
 
+  <!-- Analyzer packages (injected repo-wide via Directory.Build.targets) -->
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.201" />
+    <PackageVersion Include="Roslynator.Analyzers"                Version="4.15.0" />
+  </ItemGroup>
+
   <!-- Test packages -->
   <ItemGroup>
     <PackageVersion Include="coverlet.collector"             Version="6.0.4" />
