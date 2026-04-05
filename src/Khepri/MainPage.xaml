@@ -2,49 +2,141 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="Khepri.MainPage"
-             Title="Projects">
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="16,8">
+    <Grid RowDefinitions="Auto,Auto,*,Auto">
 
-        <ActivityIndicator Grid.Row="0"
-                           IsRunning="{Binding IsBusy}"
-                           IsVisible="{Binding IsBusy}"
-                           Margin="0,4" />
+        <!-- ── Header ─────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              Padding="20,52,20,12">
 
-        <CollectionView Grid.Row="1"
+            <Label Grid.Column="0"
+                   Text="KHEPRI"
+                   FontSize="11"
+                   FontAttributes="Bold"
+                   CharacterSpacing="5"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <ActivityIndicator Grid.Column="0"
+                               IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="End"
+                               VerticalOptions="Center"
+                               Color="{AppThemeBinding Light=Black, Dark=White}"
+                               WidthRequest="16"
+                               HeightRequest="16"
+                               Margin="0,0,12,0" />
+
+            <Button Grid.Column="1"
+                    Text="+"
+                    FontSize="24"
+                    Clicked="OnNewProjectClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                    Padding="8,0"
+                    MinimumWidthRequest="40" />
+        </Grid>
+
+        <!-- ── Search ─────────────────────────────────────────────────────── -->
+        <Border Grid.Row="1"
+                Margin="20,0,20,16"
+                BackgroundColor="{AppThemeBinding Light=#F2F2F2, Dark=#1E1E1E}"
+                StrokeThickness="0"
+                StrokeShape="Rectangle">
+            <SearchBar Text="{Binding SearchText}"
+                       Placeholder="SEARCH PROJECTS"
+                       PlaceholderColor="{AppThemeBinding Light=#AAAAAA, Dark=#555555}"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                       BackgroundColor="Transparent"
+                       FontSize="11"
+                       CharacterSpacing="1"
+                       CancelButtonColor="{AppThemeBinding Light=#888888, Dark=#666666}" />
+        </Border>
+
+        <!-- ── Project grid ───────────────────────────────────────────────── -->
+        <CollectionView Grid.Row="2"
                         x:Name="ProjectsList"
-                        ItemsSource="{Binding Projects}"
+                        ItemsSource="{Binding FilteredProjects}"
                         SelectionMode="Single"
-                        SelectionChanged="OnProjectSelected">
+                        SelectionChanged="OnProjectSelected"
+                        Margin="20,0,20,0">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical"
+                                 Span="2"
+                                 VerticalItemSpacing="20"
+                                 HorizontalItemSpacing="12" />
+            </CollectionView.ItemsLayout>
+
             <CollectionView.EmptyView>
-                <Label Text="No projects yet. Tap + New Project to create one."
-                       HorizontalOptions="Center"
-                       VerticalOptions="Center"
-                       Margin="32"
-                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                <VerticalStackLayout HorizontalOptions="Center"
+                                     VerticalOptions="Center"
+                                     Spacing="6"
+                                     Margin="32,48">
+                    <Label Text="NO PROJECTS"
+                           FontSize="11"
+                           FontAttributes="Bold"
+                           CharacterSpacing="3"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#BBBBBB, Dark=#444444}" />
+                    <Label Text="Tap + to create your first timelapse."
+                           FontSize="12"
+                           HorizontalOptions="Center"
+                           TextColor="{AppThemeBinding Light=#BBBBBB, Dark=#444444}" />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
+
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Grid Padding="4,12" ColumnDefinitions="*,Auto">
-                        <Label Grid.Column="0"
+                    <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                          Padding="0,0,0,4">
+
+                        <!-- Thumbnail placeholder (always visible; replaced by image) -->
+                        <BoxView Grid.Row="0"
+                                 HeightRequest="160"
+                                 BackgroundColor="{AppThemeBinding Light=#F2F2F2, Dark=#1E1E1E}" />
+
+                        <!-- Latest frame image (overlaid; transparent aspect crop) -->
+                        <Image Grid.Row="0"
+                               Source="{Binding LatestFrame.FilePath}"
+                               Aspect="AspectFill"
+                               HeightRequest="160" />
+
+                        <!-- Thin separator line — Swiss grid accent -->
+                        <BoxView Grid.Row="1"
+                                 HeightRequest="1"
+                                 BackgroundColor="{AppThemeBinding Light=Black, Dark=White}"
+                                 Margin="0,0,0,0" />
+
+                        <!-- Project name -->
+                        <Label Grid.Row="2"
                                Text="{Binding Name}"
-                               FontSize="16"
-                               VerticalOptions="Center" />
-                        <Label Grid.Column="1"
-                               Text="{Binding Frames.Count, StringFormat='{0} frames'}"
                                FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
-                               VerticalOptions="Center" />
+                               FontAttributes="Bold"
+                               LineBreakMode="TailTruncation"
+                               TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                               Margin="0,6,0,0" />
+
+                        <!-- Last capture date -->
+                        <Label Grid.Row="3"
+                               Text="{Binding LatestFrame.CapturedAt, StringFormat='{0:d MMM yyyy}'}"
+                               FontSize="10"
+                               CharacterSpacing="0.5"
+                               TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                               Margin="0,2,0,0" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
 
-        <Button Grid.Row="2"
-                Text="+ New Project"
-                Clicked="OnNewProjectClicked"
-                Margin="0,8,0,0" />
+        <!-- ── Bottom safe-area spacer ────────────────────────────────────── -->
+        <BoxView Grid.Row="3"
+                 HeightRequest="16"
+                 BackgroundColor="Transparent" />
 
     </Grid>
 
 </ContentPage>
+

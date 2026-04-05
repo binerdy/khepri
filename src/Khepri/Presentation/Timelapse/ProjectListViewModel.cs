@@ -11,10 +11,20 @@ namespace Khepri.Presentation.Timelapse;
 public sealed partial class ProjectListViewModel(TimelapseService timelapseService) : ObservableObject
 {
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredProjects))]
     public partial IReadOnlyList<TimelapseProject> Projects { get; set; } = [];
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FilteredProjects))]
+    public partial string SearchText { get; set; } = string.Empty;
+
+    [ObservableProperty]
     public partial bool IsBusy { get; set; }
+
+    public IEnumerable<TimelapseProject> FilteredProjects =>
+        string.IsNullOrWhiteSpace(SearchText)
+            ? Projects
+            : Projects.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken cancellationToken)
