@@ -6,7 +6,7 @@ namespace Khepri.Domain.Timelapse;
 public sealed class TimelapseFrame
 {
     public Guid Id { get; }
-    public int Index { get; }
+    public int Index { get; private set; }
     public DateTimeOffset CapturedAt { get; }
     public string FilePath { get; }
     public string? AlignedFilePath { get; private set; }
@@ -33,4 +33,6 @@ public sealed class TimelapseFrame
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         AlignedFilePath = path;
     }
+
+    internal void Reindex(int newIndex) => Index = newIndex;
 }

@@ -47,6 +47,39 @@ public sealed class TimelapseProject
         _frames[^1] = frame;
     }
 
+    public void RemoveFrame(Guid frameId)
+    {
+        var idx = _frames.FindIndex(f => f.Id == frameId);
+        if (idx < 0)
+        {
+            return;
+        }
+
+        _frames.RemoveAt(idx);
+        for (var i = idx; i < _frames.Count; i++)
+        {
+            _frames[i].Reindex(i);
+        }
+    }
+
+    public void MoveFrame(Guid frameId, int toPosition)
+    {
+        var idx = _frames.FindIndex(f => f.Id == frameId);
+        if (idx < 0 || idx == toPosition)
+        {
+            return;
+        }
+
+        var frame = _frames[idx];
+        _frames.RemoveAt(idx);
+        var target = Math.Clamp(toPosition, 0, _frames.Count);
+        _frames.Insert(target, frame);
+        for (var i = 0; i < _frames.Count; i++)
+        {
+            _frames[i].Reindex(i);
+        }
+    }
+
     public void Rename(string newName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(newName);

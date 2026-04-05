@@ -13,7 +13,8 @@
 #>
 param(
     [string][ValidateSet('Debug','Release')]$Configuration = 'Debug',
-    [switch]$Wait
+    [switch]$Wait,
+    [switch]$Cleanup
 )
 
 Set-StrictMode -Version Latest
@@ -133,9 +134,11 @@ Write-Ok "Device authorised."
 
 # ── 4. Uninstall old build (clears FastDev assembly cache) ───────────────────
 
-Write-Step "Uninstalling previous build (if any)..."
-& $adbExe -s $serial uninstall com.companyname.khepri 2>&1 | Out-Null
-Write-Ok "Uninstall done (or app was not installed)."
+if ($Cleanup) {
+    Write-Step "Uninstalling previous build (if any)..."
+    & $adbExe -s $serial uninstall com.companyname.khepri 2>&1 | Out-Null
+    Write-Ok "Uninstall done (or app was not installed)."
+}
 
 # Clear logcat now so the buffer is clean before the build starts.
 # Any crash during launch will be preserved in the stream below.

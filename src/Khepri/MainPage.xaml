@@ -8,36 +8,87 @@
     <Grid RowDefinitions="Auto,Auto,*,Auto">
 
         <!-- ── Header ─────────────────────────────────────────────────────── -->
-        <Grid Grid.Row="0"
-              ColumnDefinitions="*,Auto"
-              Padding="20,52,20,12">
+        <Grid Grid.Row="0" Padding="20,52,20,12">
 
-            <Label Grid.Column="0"
-                   Text="KHEPRI"
-                   FontSize="11"
-                   FontAttributes="Bold"
-                   CharacterSpacing="5"
-                   VerticalOptions="Center"
-                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+            <!-- Normal header -->
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  IsVisible="{Binding IsNotSelecting}">
 
-            <ActivityIndicator Grid.Column="0"
-                               IsRunning="{Binding IsBusy}"
-                               IsVisible="{Binding IsBusy}"
-                               HorizontalOptions="End"
-                               VerticalOptions="Center"
-                               Color="{AppThemeBinding Light=Black, Dark=White}"
-                               WidthRequest="16"
-                               HeightRequest="16"
-                               Margin="0,0,12,0" />
+                <VerticalStackLayout Grid.Column="0"
+                                     VerticalOptions="Center"
+                                     Spacing="1">
+                    <Label Text="KHEPRI"
+                           FontSize="11"
+                           FontAttributes="Bold"
+                           CharacterSpacing="5"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                    <Label Text="{Binding AppVersion}"
+                           FontSize="9"
+                           CharacterSpacing="1"
+                           TextColor="{AppThemeBinding Light=#AAAAAA, Dark=#555555}" />
+                </VerticalStackLayout>
 
-            <Button Grid.Column="1"
-                    Text="+"
-                    FontSize="24"
-                    Clicked="OnNewProjectClicked"
-                    BackgroundColor="Transparent"
-                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                    Padding="8,0"
-                    MinimumWidthRequest="40" />
+                <ActivityIndicator Grid.Column="0"
+                                   IsRunning="{Binding IsBusy}"
+                                   IsVisible="{Binding IsBusy}"
+                                   HorizontalOptions="End"
+                                   VerticalOptions="Center"
+                                   Color="{AppThemeBinding Light=Black, Dark=White}"
+                                   WidthRequest="16"
+                                   HeightRequest="16"
+                                   Margin="0,0,12,0" />
+
+                <ImageButton Grid.Column="1"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             Padding="12"
+                             BackgroundColor="Transparent"
+                             Source="{AppThemeBinding Light=bin_dark.svg, Dark=bin_light.svg}"
+                             Clicked="OnEnterSelectModeClicked" />
+
+                <Button Grid.Column="2"
+                        Text="+"
+                        FontSize="24"
+                        Clicked="OnNewProjectClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                        Padding="8,0"
+                        MinimumWidthRequest="40" />
+            </Grid>
+
+            <!-- Selection-mode header -->
+            <Grid ColumnDefinitions="*,Auto,Auto"
+                  IsVisible="{Binding IsSelecting}">
+
+                <Label Grid.Column="0"
+                       Text="{Binding SelectedCount, StringFormat='{0} SELECTED'}"
+                       FontSize="11"
+                       FontAttributes="Bold"
+                       CharacterSpacing="2"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+                <Button Grid.Column="1"
+                        Text="CANCEL"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Clicked="OnExitSelectModeClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        Padding="8,0" />
+
+                <Button Grid.Column="2"
+                        Text="DELETE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="1"
+                        Clicked="OnDeleteSelectedClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                        IsEnabled="{Binding HasSelection}"
+                        Padding="8,0" />
+            </Grid>
+
         </Grid>
 
         <!-- ── Search ─────────────────────────────────────────────────────── -->
@@ -93,6 +144,23 @@
                     <Grid RowDefinitions="Auto,Auto,Auto,Auto"
                           Padding="0,0,0,4">
 
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup Name="CommonStates">
+                                <VisualState Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter TargetName="SelectionOverlay" Property="BoxView.IsVisible" Value="False" />
+                                        <Setter TargetName="CheckMark" Property="Label.IsVisible" Value="False" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState Name="Selected">
+                                    <VisualState.Setters>
+                                        <Setter TargetName="SelectionOverlay" Property="BoxView.IsVisible" Value="True" />
+                                        <Setter TargetName="CheckMark" Property="Label.IsVisible" Value="True" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+
                         <!-- Thumbnail placeholder (always visible; replaced by image) -->
                         <BoxView Grid.Row="0"
                                  HeightRequest="160"
@@ -104,11 +172,28 @@
                                Aspect="AspectFill"
                                HeightRequest="160" />
 
+                        <!-- Selection overlay — semi-transparent tint over thumbnail -->
+                        <BoxView x:Name="SelectionOverlay"
+                                 Grid.Row="0"
+                                 BackgroundColor="#99000000"
+                                 IsVisible="False" />
+
+                        <!-- Checkmark indicator -->
+                        <Label x:Name="CheckMark"
+                               Grid.Row="0"
+                               Text="✓"
+                               FontSize="16"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="End"
+                               VerticalOptions="Start"
+                               Margin="0,10,10,0"
+                               IsVisible="False" />
+
                         <!-- Thin separator line — Swiss grid accent -->
                         <BoxView Grid.Row="1"
                                  HeightRequest="1"
-                                 BackgroundColor="{AppThemeBinding Light=Black, Dark=White}"
-                                 Margin="0,0,0,0" />
+                                 BackgroundColor="{AppThemeBinding Light=Black, Dark=White}" />
 
                         <!-- Project name -->
                         <Label Grid.Row="2"

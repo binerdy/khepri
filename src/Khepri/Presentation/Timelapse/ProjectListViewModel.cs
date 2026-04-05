@@ -21,10 +21,54 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
     [ObservableProperty]
     public partial bool IsBusy { get; set; }
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsNotSelecting))]
+    public partial bool IsSelecting { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasSelection))]
+    public partial int SelectedCount { get; set; }
+
+    public bool IsNotSelecting => !IsSelecting;
+    public bool HasSelection   => SelectedCount > 0;
+    public string AppVersion   => AppInfo.VersionString;
+
     public IEnumerable<TimelapseProject> FilteredProjects =>
         string.IsNullOrWhiteSpace(SearchText)
             ? Projects
             : Projects.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+
+    [RelayCommand]
+    private void EnterSelectMode()
+    {
+        IsSelecting = true;
+        SelectedCount = 0;
+    }
+
+    [RelayCommand]
+    private void ExitSelectMode()
+    {
+        IsSelecting = false;
+        SelectedCount = 0;
+    }
+
+    public async Task DeleteSelectedProjectsAsync(IEnumerable<Guid> projectIds, CancellationToken cancellationToken = default)
+    {
+        IsBusy = true;
+        try
+        {
+            foreach (var id in projectIds)
+            {
+                await timelapseService.DeleteProjectAsync(id, cancellationToken);
+            }
+
+            await LoadAsync(cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
 
     [RelayCommand]
     private async Task LoadAsync(CancellationToken cancellationToken)

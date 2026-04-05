@@ -55,10 +55,39 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
             throw new InvalidOperationException("No frames to retake.");
         }
 
-        var filePath = await camera.CapturePhotoAsync(project.LatestFrame.FilePath, cancellationToken);
+        // Overlay the second-last frame so the user can align against what came before.
+        var overlayPath = project.Frames.Count >= 2 ? project.Frames[^2].FilePath : null;
+        var filePath = await camera.CapturePhotoAsync(overlayPath, cancellationToken);
         var frame = new TimelapseFrame(Guid.NewGuid(), project.LatestFrame.Index, DateTimeOffset.UtcNow, filePath);
         project.ReplaceLatestFrame(frame);
         await repository.SaveAsync(project, cancellationToken);
         return frame;
+    }
+
+    public async Task DeleteFrameAsync(Guid projectId, Guid frameId, CancellationToken cancellationToken = default)
+    {
+        var project = await repository.GetByIdAsync(projectId, cancellationToken)
+            ?? throw new InvalidOperationException($"Project {projectId} not found.");
+
+        project.RemoveFrame(frameId);
+        await repository.SaveAsync(project, cancellationToken);
+    }
+
+    public async Task MoveFrameAsync(Guid projectId, Guid frameId, int toPosition, CancellationToken cancellationToken = default)
+    {
+        var project = await repository.GetByIdAsync(projectId, cancellationToken)
+            ?? throw new InvalidOperationException($"Project {projectId} not found.");
+
+        project.MoveFrame(frameId, toPosition);
+        await repository.SaveAsync(project, cancellationToken);
+    }
+
+    public async Task RenameProjectAsync(Guid projectId, string newName, CancellationToken cancellationToken = default)
+    {
+        var project = await repository.GetByIdAsync(projectId, cancellationToken)
+            ?? throw new InvalidOperationException($"Project {projectId} not found.");
+
+        project.Rename(newName);
+        await repository.SaveAsync(project, cancellationToken);
     }
 }

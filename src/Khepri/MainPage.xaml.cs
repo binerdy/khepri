@@ -25,6 +25,12 @@ public partial class MainPage : ContentPage
 
     private async void OnProjectSelected(object? sender, SelectionChangedEventArgs e)
     {
+        if (_vm.IsSelecting)
+        {
+            _vm.SelectedCount = ProjectsList.SelectedItems?.Count ?? 0;
+            return;
+        }
+
         if (e.CurrentSelection.FirstOrDefault() is TimelapseProject project)
         {
             ProjectsList.SelectedItem = null;
@@ -45,4 +51,46 @@ public partial class MainPage : ContentPage
             await _vm.CreateProjectCommand.ExecuteAsync(name);
         }
     }
+
+    private void OnEnterSelectModeClicked(object? sender, EventArgs e)
+    {
+        _vm.EnterSelectModeCommand.Execute(null);
+        ProjectsList.SelectionMode = SelectionMode.Multiple;
+    }
+
+    private void OnExitSelectModeClicked(object? sender, EventArgs e)
+    {
+        ProjectsList.SelectedItems?.Clear();
+        ProjectsList.SelectionMode = SelectionMode.Single;
+        _vm.ExitSelectModeCommand.Execute(null);
+    }
+
+    private async void OnDeleteSelectedClicked(object? sender, EventArgs e)
+    {
+        var count = ProjectsList.SelectedItems?.Count ?? 0;
+        if (count == 0)
+        {
+            return;
+        }
+
+        var confirmed = await DisplayAlertAsync(
+            $"Delete {count} Project{(count == 1 ? "" : "s")}",
+            "This cannot be undone.",
+            "DELETE",
+            "CANCEL");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var ids = (ProjectsList.SelectedItems ?? [])
+            .OfType<TimelapseProject>()
+            .Select(p => p.Id)
+            .ToList();
+
+        OnExitSelectModeClicked(null, EventArgs.Empty);
+        await _vm.DeleteSelectedProjectsAsync(ids);
+    }
 }
+
