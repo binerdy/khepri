@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Khepri.CameraPage"
+             NavigationPage.HasNavigationBar="False"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+
+        <!-- Live camera preview — fills the whole screen -->
+        <toolkit:CameraView x:Name="CameraPreview"
+                            HorizontalOptions="Fill"
+                            VerticalOptions="Fill" />
+
+        <!-- Ghost overlay of the previous frame -->
+        <Image x:Name="OverlayImage"
+               HorizontalOptions="Fill"
+               VerticalOptions="Fill"
+               Aspect="AspectFit"
+               IsVisible="False"
+               InputTransparent="True" />
+
+        <!-- Bottom controls -->
+        <VerticalStackLayout VerticalOptions="End"
+                             Padding="24,0,24,52"
+                             Spacing="12">
+
+            <!-- Opacity slider — only shown when an overlay is set -->
+            <Slider x:Name="OpacitySlider"
+                    Minimum="0" Maximum="1" Value="0.5"
+                    IsVisible="False"
+                    ValueChanged="OnOpacityChanged" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
+                <Button Grid.Column="0"
+                        Text="Cancel"
+                        Clicked="OnCancelClicked" />
+                <Button Grid.Column="1"
+                        Text="📷  Capture"
+                        Clicked="OnCaptureClicked" />
+            </Grid>
+
+        </VerticalStackLayout>
+
+    </Grid>
+
+</ContentPage>

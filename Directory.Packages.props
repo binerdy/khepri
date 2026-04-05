@@ -1,0 +1,24 @@
+<Project>
+  <PropertyGroup>
+    <!-- Enable Central Package Management — versions are only defined here -->
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+  <!-- Production packages -->
+  <ItemGroup>
+    <PackageVersion Include="CommunityToolkit.Mvvm"          Version="8.4.2" />
+    <PackageVersion Include="CommunityToolkit.Maui.Camera"   Version="6.0.0" />
+    <PackageVersion Include="Microsoft.Maui.Controls"        Version="10.0.30" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Debug" Version="10.0.0" />
+  </ItemGroup>
+
+  <!-- Test packages -->
+  <ItemGroup>
+    <PackageVersion Include="coverlet.collector"             Version="6.0.4" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk"         Version="17.14.1" />
+    <PackageVersion Include="NSubstitute"                    Version="5.3.0" />
+    <PackageVersion Include="Shouldly"                       Version="4.3.0" />
+    <PackageVersion Include="xunit"                          Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio"      Version="3.1.4" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Khepri/Khepri.csproj" />
+    <Project Path="src/Khepri.Application/Khepri.Application.csproj" />
+    <Project Path="src/Khepri.Domain/Khepri.Domain.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Khepri.Domain.Tests/Khepri.Domain.Tests.csproj" />
+    <Project Path="tests/Khepri.Application.Tests/Khepri.Application.Tests.csproj" />
+    <Project Path="tests/Khepri.Presentation.Tests/Khepri.Presentation.Tests.csproj" />
+  </Folder>
+</Solution>

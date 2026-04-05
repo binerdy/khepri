@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Khepri.ProjectDetailPage">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,8">
+
+        <ActivityIndicator Grid.Row="0"
+                           IsRunning="{Binding IsBusy}"
+                           IsVisible="{Binding IsBusy}"
+                           Margin="0,4" />
+
+        <Label Grid.Row="1"
+               Text="{Binding Project.Name}"
+               FontSize="22"
+               FontAttributes="Bold"
+               Margin="0,8,0,4" />
+
+        <!-- Photo gallery — 2-column grid of thumbnails -->
+        <CollectionView Grid.Row="2"
+                        ItemsSource="{Binding FramesDescending}">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout Orientation="Vertical"
+                                 Span="2"
+                                 VerticalItemSpacing="6"
+                                 HorizontalItemSpacing="6" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.EmptyView>
+                <Label Text="No frames yet. Tap Capture to take the first photo."
+                       HorizontalOptions="Center"
+                       VerticalOptions="Center"
+                       Margin="32"
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid RowDefinitions="*,Auto">
+                        <Image Grid.Row="0"
+                               Source="{Binding FilePath}"
+                               Aspect="AspectFill"
+                               HeightRequest="160" />
+                        <Label Grid.Row="1"
+                               Text="{Binding CapturedAt, StringFormat='{0:g}'}"
+                               FontSize="11"
+                               HorizontalOptions="Center"
+                               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}" />
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <Grid Grid.Row="3"
+              ColumnDefinitions="*,*"
+              ColumnSpacing="8"
+              Margin="0,8,0,0">
+            <Button Grid.Column="0"
+                    Text="Capture"
+                    Command="{Binding CaptureCommand}" />
+            <Button Grid.Column="1"
+                    Text="Retake Last"
+                    Command="{Binding RetakeCommand}"
+                    IsEnabled="{Binding HasFrames}" />
+        </Grid>
+
+    </Grid>
+
+</ContentPage>
+

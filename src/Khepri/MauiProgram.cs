@@ -1,0 +1,47 @@
+﻿using CommunityToolkit.Maui;
+using Khepri.Application.Timelapse;
+using Khepri.Domain.Timelapse;
+using Khepri.Infrastructure.Timelapse;
+using Khepri.Presentation.Timelapse;
+using Microsoft.Extensions.Logging;
+
+namespace Khepri;
+
+public static class MauiProgram
+{
+	public static MauiApp CreateMauiApp()
+	{
+		var builder = MauiApp.CreateBuilder();
+		builder
+			.UseMauiApp<App>()
+			.UseMauiCommunityToolkitCamera()
+			.ConfigureFonts(fonts =>
+			{
+				fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
+				fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
+			});
+
+		// Infrastructure
+		builder.Services.AddSingleton<ITimelapseRepository, JsonTimelapseRepository>();
+		builder.Services.AddSingleton<ICameraService, MauiCameraService>();
+		builder.Services.AddSingleton<IFrameAlignmentService, MediaPipeFrameAlignmentService>();
+
+		// Application
+		builder.Services.AddSingleton<TimelapseService>();
+		builder.Services.AddSingleton<AlignmentService>();
+
+		// Presentation
+		builder.Services.AddTransient<ProjectListViewModel>();
+		builder.Services.AddTransient<ProjectDetailViewModel>();
+		builder.Services.AddTransient<MainPage>();
+		builder.Services.AddTransient<ProjectDetailPage>();
+		builder.Services.AddTransient<CameraPage>();
+		builder.Services.AddSingleton<AppShell>();
+
+#if DEBUG
+		builder.Logging.AddDebug();
+#endif
+
+		return builder.Build();
+	}
+}
