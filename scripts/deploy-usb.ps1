@@ -10,11 +10,14 @@
     MSBuild configuration. Defaults to 'Debug'.
 .PARAMETER Wait
     Keep polling for a USB device instead of failing immediately when none is found.
+.PARAMETER NoBuild
+    Skip the build step and install the APK that was produced by the last build.
+    Useful when you have already built and only want to push the APK to the device.
 #>
 param(
     [string][ValidateSet('Debug','Release')]$Configuration = 'Debug',
     [switch]$Wait,
-    [switch]$Cleanup
+    [switch]$NoBuild
 )
 
 Set-StrictMode -Version Latest
@@ -132,35 +135,59 @@ if ($deviceState -ne 'device') {
 
 Write-Ok "Device authorised."
 
-# ── 4. Uninstall old build (clears FastDev assembly cache) ───────────────────
+# ── 4. Uninstall old build (clears launcher icon + FastDev cache) ────────────
 
-if ($Cleanup) {
-    Write-Step "Uninstalling previous build (if any)..."
-    & $adbExe -s $serial uninstall com.companyname.khepri 2>&1 | Out-Null
-    Write-Ok "Uninstall done (or app was not installed)."
-}
+Write-Step "Uninstalling previous build (if any)..."
+& $adbExe -s $serial uninstall com.binerdy.khepri 2>&1 | Out-Null
+Write-Ok "Uninstall done (or app was not installed)."
 
 # Clear logcat now so the buffer is clean before the build starts.
 # Any crash during launch will be preserved in the stream below.
 & $adbExe -s $serial logcat -c 2>$null
 
-# ── 5. Build and deploy ───────────────────────────────────────────────────────
+# ── 5. Build (unless -NoBuild) then deploy ────────────────────────────────────
 
-Write-Step "Building and deploying Khepri ($Configuration, net10.0-android)..."
-Write-Host ""
+if ($NoBuild) {
+    # Find the APK that was produced by the last build
+    $apkSearchRoot = Join-Path $PSScriptRoot "..\src\Khepri\bin\$Configuration\net10.0-android"
+    $apk = Get-ChildItem -Path $apkSearchRoot -Filter '*.apk' -Recurse -ErrorAction SilentlyContinue |
+           Where-Object { $_.Name -notmatch '\.signed' -or $_.Name -match '\.signed' } |
+           Sort-Object LastWriteTime -Descending |
+           Select-Object -First 1
 
-# AndroidFastDeployment=false bundles all assemblies into the APK so there
-# are no stale FastDev assemblies left over from previous deploys.
-& dotnet build $ProjectPath `
-    -f net10.0-android `
-    -c $Configuration `
-    -t:Run `
-    -p:AndroidDeviceSerial=$serial `
-    -p:AndroidFastDeployment=false
+    if (-not $apk) {
+        Write-Fail "No APK found under $apkSearchRoot. Run without -NoBuild first."
+        exit 1
+    }
 
-if ($LASTEXITCODE -ne 0) {
-    Write-Fail "Build or deploy failed (exit code $LASTEXITCODE)."
-    exit $LASTEXITCODE
+    Write-Step "Installing $($apk.Name) (skipping build)..."
+    Write-Host ""
+
+    & $adbExe -s $serial install $apk.FullName
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "adb install failed (exit code $LASTEXITCODE)."
+        exit $LASTEXITCODE
+    }
+
+    # Launch the app
+    & $adbExe -s $serial shell am start -n "com.binerdy.khepri/crc64aef09d98f9aac3e8.MainActivity" 2>&1 | Out-Null
+} else {
+    Write-Step "Building and deploying Khepri ($Configuration, net10.0-android)..."
+    Write-Host ""
+
+    # AndroidFastDeployment=false bundles all assemblies into the APK so there
+    # are no stale FastDev assemblies left over from previous deploys.
+    & dotnet build $ProjectPath `
+        -f net10.0-android `
+        -c $Configuration `
+        -t:Run `
+        -p:AndroidDeviceSerial=$serial `
+        -p:AndroidFastDeployment=false
+
+    if ($LASTEXITCODE -ne 0) {
+        Write-Fail "Build or deploy failed (exit code $LASTEXITCODE)."
+        exit $LASTEXITCODE
+    }
 }
 
 Write-Host ""
