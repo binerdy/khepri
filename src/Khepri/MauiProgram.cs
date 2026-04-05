@@ -45,6 +45,7 @@ public static class MauiProgram
 		builder.Services.AddTransient<TimelapsePreviewPage>();
 		builder.Services.AddTransient<CameraPage>();
 		builder.Services.AddSingleton<AppShell>();
+		builder.Services.AddTransient<SplashPage>();
 
 #if DEBUG
 		builder.Logging.AddDebug();
