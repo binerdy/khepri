@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Android.Content;
-using Android.Provider;
 using Khepri.Domain.Timelapse;
 using AndroidEnvironment = Android.OS.Environment;
 using AndroidSettings = Android.Provider.Settings;
@@ -12,192 +11,84 @@ namespace Khepri.Platforms.Android;
 /// <summary>
 /// Android implementation of <see cref="IStorageRootService"/>.
 ///
-/// Storage strategy by API level:
-///   API 21–28  → WRITE_EXTERNAL_STORAGE runtime permission  → System.IO works
-///   API 29     → requestLegacyExternalStorage in manifest   → System.IO works
-///   API 30+    → MANAGE_EXTERNAL_STORAGE (All Files Access) → System.IO works
+/// Storage root is fixed to <c>Pictures/Khepri</c> on external storage:
+///   /storage/emulated/0/Pictures/Khepri/
 ///
-/// The user picks the root folder once via ACTION_OPEN_DOCUMENT_TREE.
-/// The resolved filesystem path is persisted in Preferences so it survives
-/// app restarts (but not uninstall — the user simply picks the same folder
-/// again after reinstalling, and all previously saved files are still there).
+/// Storage strategy by API level:
+///   API 21–28  → WRITE_EXTERNAL_STORAGE runtime permission
+///   API 29     → WRITE_EXTERNAL_STORAGE + requestLegacyExternalStorage in manifest
+///   API 30+    → MANAGE_EXTERNAL_STORAGE (All Files Access via Settings)
+///
+/// On first launch (or after reinstall), <see cref="HasRootFolder"/> returns false
+/// and the app shows <see cref="Khepri.StorageSetupPage"/> to obtain permission.
+/// After that the path is always available without any user interaction.
 /// </summary>
 public sealed class AndroidStorageRootService : IStorageRootService
 {
-    private const string PrefKey = "storage_root_path";
-    internal const int FolderPickerRequestCode = 2001;
+    // Preferences key used on API ≤ 29 to remember that we have already obtained
+    // WRITE_EXTERNAL_STORAGE (runtime permission).  Not needed on API 30+ because
+    // IsExternalStorageManager is the live source of truth.
+    private const string PermissionGrantedKey = "storage_permission_granted";
 
-    private static TaskCompletionSource<global::Android.Net.Uri?>? _folderTcs;
+    // ── Fixed storage root ────────────────────────────────────────────────────
 
-    // Called by MainActivity.OnActivityResult
-    internal static void HandleFolderPickerResult(global::Android.Net.Uri? uri)
-        => Interlocked.Exchange(ref _folderTcs, null)?.TrySetResult(uri);
+    private static string PicturesKhepriPath =>
+        Path.Combine(
+            AndroidEnvironment.GetExternalStoragePublicDirectory(
+                AndroidEnvironment.DirectoryPictures)!.AbsolutePath,
+            "Khepri");
 
     // ── IStorageRootService ───────────────────────────────────────────────────
 
-    private string? _cached;
-
-    public bool HasRootFolder
-    {
-        get
-        {
-            if (_cached is not null)
-            {
-                return true;
-            }
-
-            var saved = Preferences.Get(PrefKey, null as string);
-            if (saved is null)
-            {
-                return false;
-            }
-
-            _cached = saved;
-            return true;
-        }
-    }
+    public bool HasRootFolder =>
+        OperatingSystem.IsAndroidVersionAtLeast(30)
+            ? AndroidEnvironment.IsExternalStorageManager
+            : Preferences.Get(PermissionGrantedKey, false);
 
     public string RootFolderPath
     {
         get
         {
-            if (_cached is not null)
-            {
-                return _cached;
-            }
-
-            var saved = Preferences.Get(PrefKey, null as string)
-                ?? throw new InvalidOperationException(
-                    "No root folder has been selected. Call RequestRootFolderAsync first.");
-            _cached = saved;
-            return _cached;
+            var path = PicturesKhepriPath;
+            Directory.CreateDirectory(path);
+            return path;
         }
     }
 
     public async Task<bool> RequestRootFolderAsync()
     {
-        if (!await EnsureStoragePermissionAsync())
-        {
-            return false;
-        }
-
-        return await PickFolderAsync();
-    }
-
-    // ── Internal helpers ─────────────────────────────────────────────────────
-
-    /// <summary>
-    /// On API ≥ 30 opens the "All Files Access" settings page for this app.
-    /// On API &lt; 30 requests the legacy WRITE_EXTERNAL_STORAGE permission.
-    /// Returns true when the permission is currently granted.
-    /// </summary>
-    internal static async Task<bool> EnsureStoragePermissionAsync()
-    {
         if (OperatingSystem.IsAndroidVersionAtLeast(30))
         {
             if (AndroidEnvironment.IsExternalStorageManager)
             {
+                Directory.CreateDirectory(PicturesKhepriPath);
                 return true;
             }
 
-            // Open the "All Files Access" settings page
+            // Open the "All Files Access" settings page for this app.
+            // Returns false — StorageSetupPage re-checks in OnAppearing.
             var intent = new Intent(
                 AndroidSettings.ActionManageAppAllFilesAccessPermission,
                 global::Android.Net.Uri.Parse(
                     "package:" + Platform.CurrentActivity!.PackageName));
             Platform.CurrentActivity.StartActivity(intent);
-
-            // Return false — caller (StorageSetupPage) will re-check on resume
             return false;
         }
         else
         {
             var status = await Permissions.RequestAsync<Permissions.StorageWrite>();
-            return status == PermissionStatus.Granted;
+            if (status != PermissionStatus.Granted)
+            {
+                return false;
+            }
+
+            Preferences.Set(PermissionGrantedKey, true);
+            Directory.CreateDirectory(PicturesKhepriPath);
+            return true;
         }
     }
 
-    /// <summary>Launches the SAF folder picker and resolves the result to a path.</summary>
-    internal async Task<bool> PickFolderAsync()
-    {
-        var path = await PickFolderPathAsync();
-        if (path is null)
-        {
-            return false;
-        }
-
-        SaveRootPath(path);
-        return true;
-    }
-
-    /// <summary>
-    /// Launches the folder picker and returns the resolved filesystem path without
-    /// persisting it.  Returns <see langword="null"/> if the user cancelled.
-    /// </summary>
-    internal static async Task<string?> PickFolderPathAsync()
-    {
-        _folderTcs = new TaskCompletionSource<global::Android.Net.Uri?>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-
-        var intent = new Intent(Intent.ActionOpenDocumentTree);
-        intent.AddFlags(ActivityFlags.GrantReadUriPermission
-                       | ActivityFlags.GrantWriteUriPermission
-                       | ActivityFlags.GrantPersistableUriPermission);
-
-        Platform.CurrentActivity!.StartActivityForResult(intent, FolderPickerRequestCode);
-
-        var uri = await _folderTcs.Task;
-        if (uri is null)
-        {
-            return null;
-        }
-
-        // Take persistable permission so the grant survives app restart
-        Platform.CurrentActivity.ContentResolver?.TakePersistableUriPermission(
-            uri,
-            ActivityFlags.GrantReadUriPermission | ActivityFlags.GrantWriteUriPermission);
-
-        return ResolveDocumentTreeUri(uri);
-    }
-
-    /// <summary>Persists <paramref name="path"/> as the storage root and creates the directory.</summary>
-    internal void SaveRootPath(string path)
-    {
-        Directory.CreateDirectory(path);
-        Preferences.Set(PrefKey, path);
-        _cached = path;
-    }
-
-    /// <summary>Checks if All Files Access is currently granted (API 30+ only).</summary>
+    /// <summary>True once All Files Access is confirmed granted (API 30+ only).</summary>
     internal static bool IsExternalStorageManagerGranted =>
         OperatingSystem.IsAndroidVersionAtLeast(30) && AndroidEnvironment.IsExternalStorageManager;
-
-    // ── URI → filesystem path ────────────────────────────────────────────────
-
-    private static string? ResolveDocumentTreeUri(global::Android.Net.Uri treeUri)
-    {
-        // DocumentsContract returns e.g. "primary:Documents/Khepri"
-        var docId = DocumentsContract.GetTreeDocumentId(treeUri);
-        if (docId is null)
-        {
-            return null;
-        }
-
-        var colonIdx = docId.IndexOf(':');
-        if (colonIdx < 0)
-        {
-            return null;
-        }
-
-        var volume       = docId[..colonIdx];
-        var relativePath = Uri.UnescapeDataString(docId[(colonIdx + 1)..]);
-
-        string basePath = string.Equals(volume, "primary", StringComparison.OrdinalIgnoreCase)
-            ? AndroidEnvironment.ExternalStorageDirectory?.AbsolutePath ?? "/storage/emulated/0"
-            : $"/storage/{volume}";
-
-        return string.IsNullOrEmpty(relativePath)
-            ? basePath
-            : Path.Combine(basePath, relativePath);
-    }
 }

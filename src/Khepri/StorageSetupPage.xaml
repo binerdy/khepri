@@ -28,7 +28,7 @@
 
         <!-- Description -->
         <Label x:Name="DescriptionLabel"
-               Text="Khepri saves your projects and photos to a folder you choose. This folder is not deleted when you uninstall the app, so you can reinstall and continue where you left off."
+               Text="Khepri saves your projects and photos to Pictures/Khepri on your phone. This folder is not deleted when you uninstall the app, so you can reinstall and continue where you left off."
                FontSize="15"
                TextColor="#AAAAAA"
                HorizontalTextAlignment="Center"
@@ -38,7 +38,7 @@
 
         <!-- Primary action button -->
         <Button x:Name="ActionButton"
-                Text="Select Storage Folder"
+                Text="Grant Storage Access"
                 Clicked="OnActionButtonClicked"
                 BackgroundColor="White"
                 TextColor="#0A0A0A"

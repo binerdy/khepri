@@ -10,9 +10,9 @@ public partial class StorageSetupPage : ContentPage
     private readonly IStorageRootService _storageRoot;
     private readonly AppShell            _shell;
 
-    // Set to true after we send the user to Android Settings for All Files Access.
-    // OnAppearing fires when they return and we can auto-continue.
-    private bool _waitingForAllFilesAccess;
+    // True after we open the Android Settings page for All Files Access.
+    // OnAppearing fires when the user returns so we can auto-advance.
+    private bool _waitingForPermission;
 
     public StorageSetupPage(IStorageRootService storageRoot, AppShell shell)
     {
@@ -25,138 +25,42 @@ public partial class StorageSetupPage : ContentPage
     {
         base.OnAppearing();
 
-        // Return from "All Files Access" settings — check if granted and auto-continue
-        if (_waitingForAllFilesAccess)
+        if (_waitingForPermission)
         {
-#if ANDROID
-            if (Khepri.Platforms.Android.AndroidStorageRootService.IsExternalStorageManagerGranted)
+            if (_storageRoot.HasRootFolder)
             {
-                _waitingForAllFilesAccess = false;
-                await PickFolderAndAdvanceAsync();
+                _waitingForPermission = false;
+                NavigateToShell();
             }
             else
             {
-                SetStatus("Permission was not granted. Please enable 'All Files Access' for Khepri.");
-                ActionButton.Text    = "Try Again";
+                SetStatus("Permission was not granted. Tap 'Grant Access' to try again.");
+                ActionButton.Text      = "Grant Access";
                 ActionButton.IsEnabled = true;
             }
-#endif
         }
     }
 
     private async void OnActionButtonClicked(object? sender, EventArgs e)
     {
         ActionButton.IsEnabled = false;
+        SetStatus("Requesting permission…");
 
-        if (_waitingForAllFilesAccess)
-        {
-            // Re-check permission after user returned without granting
-#if ANDROID
-            if (!Khepri.Platforms.Android.AndroidStorageRootService.IsExternalStorageManagerGranted)
-            {
-                await RequestAllFilesAccessAsync();
-                return;
-            }
-            _waitingForAllFilesAccess = false;
-            await PickFolderAndAdvanceAsync();
-#endif
-            return;
-        }
+        var granted = await _storageRoot.RequestRootFolderAsync();
 
-#if ANDROID
-        if (OperatingSystem.IsAndroidVersionAtLeast(30) &&
-            !Khepri.Platforms.Android.AndroidStorageRootService.IsExternalStorageManagerGranted)
-        {
-            await RequestAllFilesAccessAsync();
-            return;
-        }
-#endif
-
-        await PickFolderAndAdvanceAsync();
-    }
-
-    private async Task PickFolderAndAdvanceAsync()
-    {
-        SetStatus("Opening folder picker…");
-        ActionButton.IsEnabled = false;
-
-#if ANDROID
-        var androidService = (Khepri.Platforms.Android.AndroidStorageRootService)_storageRoot;
-
-        var basePath = await Khepri.Platforms.Android.AndroidStorageRootService.PickFolderPathAsync();
-        if (basePath is null)
-        {
-            SetStatus("No folder was selected. Please try again.");
-            ActionButton.Text      = "Select Storage Folder";
-            ActionButton.IsEnabled = true;
-            return;
-        }
-
-        // Ask if the user wants to create a subfolder within the selected location
-        var subfolderName = await DisplayPromptAsync(
-            "Create Subfolder?",
-            $"Projects will be saved in:\n{basePath}\n\nEnter a subfolder name to create one, or leave blank to use this folder directly.",
-            "Use This Folder",
-            "Cancel",
-            placeholder: "Khepri",
-            initialValue: "Khepri");
-
-        // null means Cancel was tapped
-        if (subfolderName is null)
-        {
-            SetStatus("No folder was selected. Please try again.");
-            ActionButton.Text      = "Select Storage Folder";
-            ActionButton.IsEnabled = true;
-            return;
-        }
-
-        var finalPath = string.IsNullOrWhiteSpace(subfolderName)
-            ? basePath
-            : Path.Combine(basePath, subfolderName.Trim());
-
-        androidService.SaveRootPath(finalPath);
-        NavigateToShell();
-#else
-        var success = await _storageRoot.RequestRootFolderAsync();
-
-        if (success)
+        if (granted)
         {
             NavigateToShell();
         }
         else
         {
-            SetStatus("No folder was selected. Please try again.");
-            ActionButton.Text      = "Select Storage Folder";
+            // API 30+: opened Settings; detect grant in OnAppearing
+            _waitingForPermission  = true;
+            ActionButton.Text      = "I've Granted Access";
             ActionButton.IsEnabled = true;
+            SetStatus("Enable 'All Files Access' for Khepri in Settings, then return here.");
         }
-#endif
     }
-
-#if ANDROID
-    private async Task RequestAllFilesAccessAsync()
-    {
-        bool agreed = await DisplayAlertAsync(
-            "All Files Access Required",
-            "Khepri needs 'All Files Access' so your projects survive uninstall. " +
-            "You will be taken to Settings — please enable it for Khepri, then return here.",
-            "Open Settings",
-            "Cancel");
-
-        if (!agreed)
-        {
-            ActionButton.IsEnabled = true;
-            return;
-        }
-
-        _waitingForAllFilesAccess = true;
-        SetStatus("Waiting for permission… Return here after enabling 'All Files Access'.");
-        ActionButton.Text      = "I've Granted Access";
-        ActionButton.IsEnabled = true;
-
-        // This opens Settings and returns immediately; we detect the grant in OnAppearing
-        await Khepri.Platforms.Android.AndroidStorageRootService.EnsureStoragePermissionAsync();
-    }
-#endif
 
     private void NavigateToShell()
     {
