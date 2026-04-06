@@ -4,18 +4,17 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Khepri.Application.Timelapse;
-using Khepri.Domain.Timelapse;
 
 namespace Khepri.Presentation.Timelapse;
 
 [QueryProperty(nameof(RawProjectId), "projectId")]
 public sealed partial class TimelapsePreviewViewModel(
     TimelapseService timelapseService,
-    AlignmentService alignmentService,
     IVideoExportService videoExportService) : ObservableObject
 {
     private Guid _projectId;
     private IReadOnlyList<string>? _framePaths;
+    private IReadOnlyList<(double X, double Y)>? _frameOffsets;
     private IDispatcherTimer? _timer;
     private int _currentIndex;
 
@@ -34,6 +33,8 @@ public sealed partial class TimelapsePreviewViewModel(
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ProgressText))]
     [NotifyPropertyChangedFor(nameof(CurrentFramePath))]
+    [NotifyPropertyChangedFor(nameof(CurrentOffsetX))]
+    [NotifyPropertyChangedFor(nameof(CurrentOffsetY))]
     public partial int CurrentFrameIndex { get; set; }
 
     [ObservableProperty]
@@ -62,28 +63,10 @@ public sealed partial class TimelapsePreviewViewModel(
     public partial double ExportProgress { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAlignButtonVisible))]
-    public partial bool IsClone { get; set; }
+    [NotifyPropertyChangedFor(nameof(SettingsToggleText))]
+    public partial bool ShowSettings { get; set; } = false;
 
-    [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsAlignButtonVisible))]
-    public partial bool IsAligning { get; set; }
-
-    [ObservableProperty]
-    public partial double AlignProgress { get; set; }
-
-    [ObservableProperty]
-    public partial int AlgorithmIndex { get; set; } = 0;
-
-    public string[] AlgorithmNames { get; } =
-    [
-        "Facial Landmark Warp",
-        "Phase Correlation",
-        "ORB Feature Matching",
-        "Laplacian Crop",
-    ];
-
-    public bool IsAlignButtonVisible => IsClone && !IsAligning;
+    public string SettingsToggleText => ShowSettings ? "▲ SETTINGS" : "▼ SETTINGS";
 
     public bool IsNotPlaying   => !IsPlaying;
     public bool IsNotExporting => !IsExporting;
@@ -93,9 +76,35 @@ public sealed partial class TimelapsePreviewViewModel(
            ? _framePaths[Math.Clamp(_currentIndex, 0, _framePaths.Count - 1)]
            : null;
 
+    public double CurrentOffsetX
+        => (_frameOffsets is { Count: > 0 })
+           ? _frameOffsets[Math.Clamp(_currentIndex, 0, _frameOffsets.Count - 1)].X
+           : 0;
+
+    public double CurrentOffsetY
+        => (_frameOffsets is { Count: > 0 })
+           ? _frameOffsets[Math.Clamp(_currentIndex, 0, _frameOffsets.Count - 1)].Y
+           : 0;
+
     public string ProgressText => FrameCount > 0 ? $"{CurrentFrameIndex + 1} / {FrameCount}" : "—";
 
-    public string[] TransitionNames { get; } = ["None", "Fade"];
+    public string[] TransitionNames { get; } = ["None", "Fade", "Flip"];
+
+    // Called from OnNavigatedTo so the page always shows up-to-date offsets,
+    // even when it is returned to via the navigation back-stack.
+    public Task RefreshAsync() => LoadAsync();
+
+    /// <summary>Advances one frame; works whether playback is running or paused.</summary>
+    public void AdvanceOneFrame()
+    {
+        if (_framePaths is null or { Count: 0 })
+        {
+            return;
+        }
+
+        _currentIndex = (_currentIndex + 1) % _framePaths.Count;
+        CurrentFrameIndex = _currentIndex;
+    }
 
     private async Task LoadAsync()
     {
@@ -107,15 +116,22 @@ public sealed partial class TimelapsePreviewViewModel(
         }
 
         ProjectName = project.Name.ToUpperInvariant();
-        IsClone = project.IsClone;
-        _framePaths = project.Frames
-            .OrderBy(f => f.Index)
-            .Select(f => f.ActiveFilePath)
-            .ToList();
-
-        FrameCount = _framePaths.Count;
+        var ordered = project.Frames.OrderBy(f => f.Index).ToList();
+        _framePaths   = ordered.Select(f => f.ActiveFilePath).ToList();
+        _frameOffsets = ordered.Select(f => (f.OffsetX, f.OffsetY)).ToList();
+        _currentIndex = 0;
+        FrameCount    = _framePaths.Count;
         CurrentFrameIndex = 0;
+        // [ObservableProperty] skips notification when the value is unchanged (0→0).
+        // Manually notify so the image and offset bindings always reflect the
+        // freshly-loaded data.
+        OnPropertyChanged(nameof(CurrentFramePath));
+        OnPropertyChanged(nameof(CurrentOffsetX));
+        OnPropertyChanged(nameof(CurrentOffsetY));
     }
+
+    [RelayCommand]
+    private void ToggleSettings() => ShowSettings = !ShowSettings;
 
     [RelayCommand]
     private void TogglePlay()
@@ -172,47 +188,6 @@ public sealed partial class TimelapsePreviewViewModel(
 
         _currentIndex = (_currentIndex + 1) % _framePaths.Count;
         CurrentFrameIndex = _currentIndex;
-    }
-
-    [RelayCommand]
-    private async Task AlignAsync(CancellationToken cancellationToken)
-    {
-        var algorithm = (AlignmentAlgorithm)AlgorithmIndex;
-        if (algorithm != AlignmentAlgorithm.FacialLandmarkWarp)
-        {
-            await Shell.Current.DisplayAlertAsync(
-                "Not Yet Available",
-                $"'{AlgorithmNames[AlgorithmIndex]}' is not yet implemented.",
-                "OK");
-            return;
-        }
-
-        StopTimer();
-        IsAligning = true;
-        AlignProgress = 0;
-
-        try
-        {
-            var progressReporter = new Progress<(int Current, int Total)>(r =>
-                AlignProgress = r.Total > 0 ? (double)r.Current / r.Total : 0);
-
-            await alignmentService.AlignProjectAsync(_projectId, progressReporter, cancellationToken);
-
-            // Reload frame paths — ActiveFilePath now points to the aligned images.
-            await LoadAsync();
-        }
-        catch (OperationCanceledException)
-        {
-            // dismissed
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlertAsync("Alignment failed", ex.Message, "OK");
-        }
-        finally
-        {
-            IsAligning = false;
-        }
     }
 
     [RelayCommand]

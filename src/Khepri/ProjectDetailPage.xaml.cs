@@ -20,6 +20,16 @@ public partial class ProjectDetailPage : ContentPage
     private async void OnBackClicked(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync("..");
 
+    protected override void OnAppearing()
+    {
+        base.OnAppearing();
+    }
+
+    protected override void OnDisappearing()
+    {
+        base.OnDisappearing();
+    }
+
     private async void OnEditClicked(object? sender, EventArgs e)
     {
         var current = _vm.Project?.Name ?? string.Empty;
@@ -39,27 +49,18 @@ public partial class ProjectDetailPage : ContentPage
     private async void OnPlayClicked(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync($"TimelapsePreview?projectId={_vm.CurrentProjectId}");
 
-    private void OnEnterSelectModeClicked(object? sender, EventArgs e)
-    {
-        foreach (var item in _vm.DisplayFrames)
-        {
-            item.IsSelected = false;
-        }
+    private async void OnAlignClicked(object? sender, EventArgs e)
+        => await Shell.Current.GoToAsync($"FrameAlign?projectId={_vm.CurrentProjectId}");
 
+    private void OnExitSelectModeClicked(object? sender, EventArgs e)
+        => _vm.ExitSelectModeCommand.Execute(null);
+
+    private async void OnDeleteSelectedClicked(object? sender, EventArgs e)
+    {
         _vm.EnterSelectModeCommand.Execute(null);
     }
 
-    private void OnExitSelectModeClicked(object? sender, EventArgs e)
-    {
-        foreach (var item in _vm.DisplayFrames)
-        {
-            item.IsSelected = false;
-        }
-
-        _vm.ExitSelectModeCommand.Execute(null);
-    }
-
-    private async void OnDeleteSelectedClicked(object? sender, EventArgs e)
+    private async void OnConfirmClicked(object? sender, EventArgs e)
     {
         var items = _vm.DisplayFrames.Where(f => f.IsSelected).ToList();
         var count = items.Count;
@@ -111,10 +112,12 @@ public partial class ProjectDetailPage : ContentPage
         }
     }
 
-    private async void OnFrameDrop(object? sender, DropEventArgs e)
+    protected async void OnFrameDrop(object? sender, DropEventArgs e)
     {
         if (_dragSource is null)
+        {
             return;
+        }
 
         if (sender is Element { BindingContext: FrameDisplayItem target } && target != _dragSource)
         {

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:Khepri"
              xmlns:vm="clr-namespace:Khepri.Presentation.Timelapse"
              x:Class="Khepri.ProjectDetailPage"
              Shell.NavBarIsVisible="False"
@@ -11,10 +12,10 @@
         <!-- ── Header ─────────────────────────────────────────────────────── -->
         <Grid Grid.Row="0" Padding="20,52,20,12">
 
-            <!-- Normal header -->
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto"
-                  IsVisible="{Binding IsNotSelecting}">
+            <!-- Single header — bin disabled until selection mode -->
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
 
+                <!-- Back / Cancel -->
                 <Button Grid.Column="0"
                         Text="← BACK"
                         FontSize="11"
@@ -22,8 +23,20 @@
                         Clicked="OnBackClicked"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        IsVisible="{Binding IsNotSelecting}"
                         Padding="0,0,12,0" />
 
+                <Button Grid.Column="0"
+                        Text="CANCEL"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Clicked="OnExitSelectModeClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        IsVisible="{Binding IsSelecting}"
+                        Padding="0,0,4,0" />
+
+                <!-- Project name / selected count -->
                 <Label Grid.Column="1"
                        Text="{Binding Project.Name}"
                        FontSize="11"
@@ -32,6 +45,16 @@
                        VerticalOptions="Center"
                        HorizontalOptions="Fill"
                        LineBreakMode="TailTruncation"
+                       IsVisible="{Binding IsNotSelecting}"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+                <Label Grid.Column="1"
+                       Text="{Binding SelectedCount, StringFormat='{0} SELECTED'}"
+                       FontSize="11"
+                       FontAttributes="Bold"
+                       CharacterSpacing="2"
+                       VerticalOptions="Center"
+                       IsVisible="{Binding IsSelecting}"
                        TextColor="{AppThemeBinding Light=Black, Dark=White}" />
 
                 <ActivityIndicator Grid.Column="1"
@@ -44,64 +67,62 @@
                                    HeightRequest="16"
                                    Margin="0,0,4,0" />
 
+                <!-- Edit -->
                 <ImageButton Grid.Column="2"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
                              BackgroundColor="Transparent"
+                             IsVisible="{Binding IsNotSelecting}"
                              Source="{AppThemeBinding Light=edit_dark.svg, Dark=edit_light.svg}"
                              Clicked="OnEditClicked" />
 
+                <!-- Play -->
                 <ImageButton Grid.Column="3"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="11"
                              BackgroundColor="Transparent"
                              IsEnabled="{Binding HasFrames}"
+                             IsVisible="{Binding IsNotSelecting}"
                              Source="{AppThemeBinding Light=play_dark.svg, Dark=play_light.svg}"
                              Clicked="OnPlayClicked" />
 
-                <ImageButton Grid.Column="4"
+                <!-- Align -->
+                <Button Grid.Column="4"
+                        Text="ALIGN"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Clicked="OnAlignClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        IsEnabled="{Binding HasFrames}"
+                        IsVisible="{Binding IsNotSelecting}"
+                        Padding="8,0" />
+
+                <!-- Bin — hidden in selection mode -->
+                <ImageButton Grid.Column="5"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
                              BackgroundColor="Transparent"
-                             IsEnabled="{Binding HasFrames}"
+                             IsVisible="{Binding IsNotSelecting}"
                              Source="{AppThemeBinding Light=bin_dark.svg, Dark=bin_light.svg}"
-                             Clicked="OnEnterSelectModeClicked" />
-            </Grid>
+                             Clicked="OnDeleteSelectedClicked" />
 
-            <!-- Selection-mode header -->
-            <Grid ColumnDefinitions="*,Auto,Auto"
-                  IsVisible="{Binding IsSelecting}">
-
-                <Label Grid.Column="0"
-                       Text="{Binding SelectedCount, StringFormat='{0} SELECTED'}"
-                       FontSize="11"
-                       FontAttributes="Bold"
-                       CharacterSpacing="2"
-                       VerticalOptions="Center"
-                       TextColor="{AppThemeBinding Light=Black, Dark=White}" />
-
-                <Button Grid.Column="1"
-                        Text="CANCEL"
-                        FontSize="11"
-                        CharacterSpacing="1"
-                        Clicked="OnExitSelectModeClicked"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                        Padding="8,0" />
-
-                <Button Grid.Column="2"
-                        Text="DELETE"
+                <!-- OK — visible in selection mode to confirm delete -->
+                <Button Grid.Column="6"
+                        Text="OK"
                         FontSize="11"
                         FontAttributes="Bold"
                         CharacterSpacing="1"
-                        Clicked="OnDeleteSelectedClicked"
+                        Clicked="OnConfirmClicked"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                        IsEnabled="{Binding HasSelection}"
-                        Padding="8,0" />
+                        IsVisible="{Binding IsSelecting}"
+                        Padding="8,0"
+                        MinimumWidthRequest="40" />
+
             </Grid>
 
         </Grid>

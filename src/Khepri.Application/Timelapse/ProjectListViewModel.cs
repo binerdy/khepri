@@ -3,16 +3,14 @@
 
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Khepri.Application.Timelapse;
-using Khepri.Domain.Timelapse;
 
-namespace Khepri.Presentation.Timelapse;
+namespace Khepri.Application.Timelapse;
 
 public sealed partial class ProjectListViewModel(TimelapseService timelapseService) : ObservableObject
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProjects))]
-    public partial IReadOnlyList<TimelapseProject> Projects { get; set; } = [];
+    public partial IReadOnlyList<ProjectDisplayItem> Projects { get; set; } = [];
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(FilteredProjects))]
@@ -23,24 +21,34 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotSelecting))]
+    [NotifyPropertyChangedFor(nameof(IsNotSelectingOrHasSingleSelection))]
     public partial bool IsSelecting { get; set; }
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection))]
+    [NotifyPropertyChangedFor(nameof(HasSingleSelection))]
+    [NotifyPropertyChangedFor(nameof(IsNotSelectingOrHasSingleSelection))]
     public partial int SelectedCount { get; set; }
 
-    public bool IsNotSelecting => !IsSelecting;
-    public bool HasSelection   => SelectedCount > 0;
-    public string AppVersion   => AppInfo.VersionString;
+    public bool IsNotSelecting                  => !IsSelecting;
+    public bool HasSelection                    => SelectedCount > 0;
+    public bool HasSingleSelection              => SelectedCount == 1;
+    // Clone button: always tappable when not selecting; disabled while selecting with ≠1 item
+    public bool IsNotSelectingOrHasSingleSelection => !IsSelecting || SelectedCount == 1;
 
-    public IEnumerable<TimelapseProject> FilteredProjects =>
+    public IEnumerable<ProjectDisplayItem> FilteredProjects =>
         string.IsNullOrWhiteSpace(SearchText)
             ? Projects
-            : Projects.Where(p => p.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
+            : Projects.Where(p => p.Project.Name.Contains(SearchText, StringComparison.OrdinalIgnoreCase));
 
     [RelayCommand]
     private void EnterSelectMode()
     {
+        foreach (var item in Projects)
+        {
+            item.IsSelected = false;
+        }
+
         IsSelecting = true;
         SelectedCount = 0;
     }
@@ -48,6 +56,11 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
     [RelayCommand]
     private void ExitSelectMode()
     {
+        foreach (var item in Projects)
+        {
+            item.IsSelected = false;
+        }
+
         IsSelecting = false;
         SelectedCount = 0;
     }
@@ -76,7 +89,8 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
         IsBusy = true;
         try
         {
-            Projects = await timelapseService.GetAllProjectsAsync(cancellationToken);
+            var projects = await timelapseService.GetAllProjectsAsync(cancellationToken);
+            Projects = projects.Select(p => new ProjectDisplayItem(p)).ToList();
         }
         finally
         {
@@ -91,17 +105,17 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
         await LoadAsync(cancellationToken);
     }
 
-    [RelayCommand]
-    private async Task CloneProjectAsync((Guid SourceId, string NewName) args, CancellationToken cancellationToken)
+    public async Task CloneAsync(Guid sourceId, string newName, CancellationToken cancellationToken = default)
     {
-        await timelapseService.CloneProjectAsync(args.SourceId, args.NewName, cancellationToken);
-        await LoadAsync(cancellationToken);
-    }
-
-    [RelayCommand]
-    private async Task DeleteProjectAsync(Guid projectId, CancellationToken cancellationToken)
-    {
-        await timelapseService.DeleteProjectAsync(projectId, cancellationToken);
-        await LoadAsync(cancellationToken);
+        IsBusy = true;
+        try
+        {
+            await timelapseService.CloneProjectAsync(sourceId, newName, cancellationToken);
+            await LoadAsync(cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 }

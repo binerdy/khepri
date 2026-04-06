@@ -1,14 +1,16 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Khepri.Domain.Timelapse;
-using Khepri.Presentation.Timelapse;
+using Khepri.Application.Timelapse;
 
 namespace Khepri;
 
 public partial class MainPage : ContentPage
 {
+    private enum PendingAction { None, Delete, Clone }
+
     private readonly ProjectListViewModel _vm;
+    private PendingAction _pending;
 
     public MainPage(ProjectListViewModel vm)
     {
@@ -23,19 +25,21 @@ public partial class MainPage : ContentPage
         await _vm.LoadCommand.ExecuteAsync(null);
     }
 
-    private async void OnProjectSelected(object? sender, SelectionChangedEventArgs e)
+    private async void OnItemTapped(object? sender, TappedEventArgs e)
     {
-        if (_vm.IsSelecting)
+        if (sender is not Element { BindingContext: ProjectDisplayItem item })
         {
-            _vm.SelectedCount = ProjectsList.SelectedItems?.Count ?? 0;
             return;
         }
 
-        if (e.CurrentSelection.FirstOrDefault() is TimelapseProject project)
+        if (_vm.IsSelecting)
         {
-            ProjectsList.SelectedItem = null;
-            await Shell.Current.GoToAsync($"ProjectDetail?projectId={project.Id}");
+            item.IsSelected = !item.IsSelected;
+            _vm.SelectedCount = _vm.Projects.Count(p => p.IsSelected);
+            return;
         }
+
+        await Shell.Current.GoToAsync($"ProjectDetail?projectId={item.Project.Id}");
     }
 
     private async void OnNewProjectClicked(object? sender, EventArgs e)
@@ -52,45 +56,86 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private void OnEnterSelectModeClicked(object? sender, EventArgs e)
+    private void OnDeleteSelectedClicked(object? sender, EventArgs e)
     {
+        _pending = PendingAction.Delete;
         _vm.EnterSelectModeCommand.Execute(null);
-        ProjectsList.SelectionMode = SelectionMode.Multiple;
+    }
+
+    private void OnCloneSelectedClicked(object? sender, EventArgs e)
+    {
+        _pending = PendingAction.Clone;
+        _vm.EnterSelectModeCommand.Execute(null);
     }
 
     private void OnExitSelectModeClicked(object? sender, EventArgs e)
     {
-        ProjectsList.SelectedItems?.Clear();
-        ProjectsList.SelectionMode = SelectionMode.Single;
+        _pending = PendingAction.None;
         _vm.ExitSelectModeCommand.Execute(null);
     }
 
-    private async void OnDeleteSelectedClicked(object? sender, EventArgs e)
+    private async void OnConfirmClicked(object? sender, EventArgs e)
     {
-        var count = ProjectsList.SelectedItems?.Count ?? 0;
-        if (count == 0)
+        switch (_pending)
+        {
+            case PendingAction.Delete:
+                await ConfirmDeleteAsync();
+                break;
+            case PendingAction.Clone:
+                await ConfirmCloneAsync();
+                break;
+        }
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (_vm.SelectedCount == 0)
         {
             return;
         }
 
         var confirmed = await DisplayAlertAsync(
-            $"Delete {count} Project{(count == 1 ? "" : "s")}",
-            "This cannot be undone.",
-            "DELETE",
-            "CANCEL");
+            "Delete Projects",
+            $"Delete {_vm.SelectedCount} project(s)? This cannot be undone.",
+            "Delete",
+            "Cancel");
 
         if (!confirmed)
         {
             return;
         }
 
-        var ids = (ProjectsList.SelectedItems ?? [])
-            .OfType<TimelapseProject>()
-            .Select(p => p.Id)
+        var ids = _vm.Projects
+            .Where(p => p.IsSelected)
+            .Select(p => p.Project.Id)
             .ToList();
 
-        OnExitSelectModeClicked(null, EventArgs.Empty);
+        _pending = PendingAction.None;
+        _vm.ExitSelectModeCommand.Execute(null);
         await _vm.DeleteSelectedProjectsAsync(ids);
     }
-}
 
+    private async Task ConfirmCloneAsync()
+    {
+        var source = _vm.Projects.FirstOrDefault(p => p.IsSelected);
+        if (source is null)
+        {
+            return;
+        }
+
+        _pending = PendingAction.None;
+        _vm.ExitSelectModeCommand.Execute(null);
+
+        var newName = await DisplayPromptAsync(
+            "Clone Project",
+            $"Clone of \"{source.Project.Name}\":",
+            "Clone",
+            "Cancel",
+            placeholder: source.Project.Name + " (clone)");
+
+        if (!string.IsNullOrWhiteSpace(newName))
+        {
+            await _vm.CloneAsync(source.Project.Id, newName);
+        }
+    }
+}

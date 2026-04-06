@@ -10,8 +10,10 @@ public sealed class TimelapseFrame
     public DateTimeOffset CapturedAt { get; }
     public string FilePath { get; }
     public string? AlignedFilePath { get; private set; }
+    public double OffsetX { get; private set; }
+    public double OffsetY { get; private set; }
 
-    public TimelapseFrame(Guid id, int index, DateTimeOffset capturedAt, string filePath, string? alignedFilePath = null)
+    public TimelapseFrame(Guid id, int index, DateTimeOffset capturedAt, string filePath, string? alignedFilePath = null, double offsetX = 0d, double offsetY = 0d)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         if (index < 0)
@@ -24,6 +26,8 @@ public sealed class TimelapseFrame
         CapturedAt = capturedAt;
         FilePath = filePath;
         AlignedFilePath = alignedFilePath;
+        OffsetX = offsetX;
+        OffsetY = offsetY;
     }
 
     public string ActiveFilePath => AlignedFilePath ?? FilePath;
@@ -32,6 +36,12 @@ public sealed class TimelapseFrame
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(path);
         AlignedFilePath = path;
+    }
+
+    public void SetOffset(double x, double y)
+    {
+        OffsetX = x;
+        OffsetY = y;
     }
 
     internal void Reindex(int newIndex) => Index = newIndex;

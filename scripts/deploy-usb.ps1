@@ -140,6 +140,7 @@ Write-Ok "Device authorised."
 
 if ($Cleanup) {
     Write-Step "Uninstalling previous build (if any)..."
+    & $adbExe shell pm clear com.binerdy.khepri
     & $adbExe -s $serial uninstall com.binerdy.khepri 2>&1 | Out-Null
     Write-Ok "Uninstall done (or app was not installed)."
 }

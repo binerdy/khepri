@@ -8,16 +8,14 @@ namespace Khepri;
 public partial class StorageSetupPage : ContentPage
 {
     private readonly IStorageRootService _storageRoot;
-    private readonly AppShell            _shell;
 
     // True after we open the Android Settings page for All Files Access.
     // OnAppearing fires when the user returns so we can auto-advance.
     private bool _waitingForPermission;
 
-    public StorageSetupPage(IStorageRootService storageRoot, AppShell shell)
+    public StorageSetupPage(IStorageRootService storageRoot)
     {
         _storageRoot = storageRoot;
-        _shell       = shell;
         InitializeComponent();
     }
 
@@ -62,12 +60,9 @@ public partial class StorageSetupPage : ContentPage
         }
     }
 
-    private void NavigateToShell()
+    private async void NavigateToShell()
     {
-        if (Microsoft.Maui.Controls.Application.Current?.Windows is [{ } window, ..])
-        {
-            window.Page = _shell;
-        }
+        await Navigation.PopModalAsync(animated: false);
     }
 
     private void SetStatus(string message)

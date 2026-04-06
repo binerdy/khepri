@@ -7,7 +7,6 @@ using Khepri.Domain.Timelapse;
 using Khepri.Infrastructure.Timelapse;
 using Khepri.Presentation.Timelapse;
 using Microsoft.Extensions.Logging;
-
 namespace Khepri;
 
 public static class MauiProgram
@@ -35,23 +34,25 @@ public static class MauiProgram
 		builder.Services.AddSingleton<ITimelapseRepository, JsonTimelapseRepository>();
 		builder.Services.AddSingleton<ICameraService, MauiCameraService>();
 #if ANDROID
-		builder.Services.AddSingleton<IFrameAlignmentService, Khepri.Platforms.Android.MediaPipeFrameAlignmentService>();
+		builder.Services.AddSingleton<IImageTransformService, Khepri.Platforms.Android.AndroidImageTransformService>();
 		builder.Services.AddSingleton<IVideoExportService, Khepri.Platforms.Android.VideoExportService>();
 #else
-		builder.Services.AddSingleton<IFrameAlignmentService, MediaPipeFrameAlignmentService>();
+		builder.Services.AddSingleton<IImageTransformService, StubImageTransformService>();
 #endif
 
 		// Application
 		builder.Services.AddSingleton<TimelapseService>();
-		builder.Services.AddSingleton<AlignmentService>();
+		builder.Services.AddSingleton<FrameAlignService>();
 
 		// Presentation
 		builder.Services.AddTransient<ProjectListViewModel>();
 		builder.Services.AddTransient<ProjectDetailViewModel>();
 		builder.Services.AddTransient<TimelapsePreviewViewModel>();
+		builder.Services.AddTransient<FrameAlignViewModel>();
 		builder.Services.AddTransient<MainPage>();
 		builder.Services.AddTransient<ProjectDetailPage>();
 		builder.Services.AddTransient<TimelapsePreviewPage>();
+		builder.Services.AddTransient<FrameAlignPage>();
 		builder.Services.AddTransient<CameraPage>();
 		builder.Services.AddSingleton<AppShell>();
 		builder.Services.AddTransient<StorageSetupPage>();

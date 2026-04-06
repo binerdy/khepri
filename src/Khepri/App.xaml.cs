@@ -5,14 +5,14 @@ namespace Khepri;
 
 public partial class App : Microsoft.Maui.Controls.Application
 {
-	private readonly SplashPage _splash;
+	private readonly AppShell _shell;
 
-	public App(SplashPage splash)
+	public App(AppShell shell)
 	{
 		InitializeComponent();
-		_splash = splash;
+		_shell = shell;
 	}
 
 	protected override Window CreateWindow(IActivationState? activationState)
-		=> new Window(_splash);
+		=> new Window(_shell);
 }

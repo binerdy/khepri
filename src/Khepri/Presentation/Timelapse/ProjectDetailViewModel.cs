@@ -51,6 +51,11 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
     [RelayCommand]
     private void EnterSelectMode()
     {
+        foreach (var item in DisplayFrames)
+        {
+            item.IsSelected = false;
+        }
+
         IsSelecting = true;
         SelectedCount = 0;
     }
@@ -58,6 +63,11 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
     [RelayCommand]
     private void ExitSelectMode()
     {
+        foreach (var item in DisplayFrames)
+        {
+            item.IsSelected = false;
+        }
+
         IsSelecting = false;
         SelectedCount = 0;
     }

@@ -7,13 +7,11 @@ namespace Khepri;
 
 public partial class SplashPage : ContentPage
 {
-    private readonly AppShell            _shell;
     private readonly IStorageRootService _storageRoot;
     private readonly StorageSetupPage    _setupPage;
 
-    public SplashPage(AppShell shell, IStorageRootService storageRoot, StorageSetupPage setupPage)
+    public SplashPage(IStorageRootService storageRoot, StorageSetupPage setupPage)
     {
-        _shell       = shell;
         _storageRoot = storageRoot;
         _setupPage   = setupPage;
         InitializeComponent();
@@ -52,10 +50,14 @@ public partial class SplashPage : ContentPage
                 TopLine.FadeToAsync(0, 320),
                 BottomLine.FadeToAsync(0, 320));
 
-            // Hand off to the shell (or storage setup on first launch)
-            if (Microsoft.Maui.Controls.Application.Current?.Windows is [{ } window, ..])
+            // Dismiss the splash modal; show storage setup if needed on first launch.
+            await Navigation.PopModalAsync(animated: false);
+            if (!_storageRoot.HasRootFolder)
             {
-                window.Page = _storageRoot.HasRootFolder ? _shell : _setupPage;
+                if (Microsoft.Maui.Controls.Application.Current?.Windows is [{ } window, ..])
+                {
+                    await window.Page!.Navigation.PushModalAsync(_setupPage, animated: false);
+                }
             }
         }
         catch (TaskCanceledException) { }

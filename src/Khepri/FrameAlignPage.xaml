@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Khepri.Presentation.Timelapse"
+             x:Class="Khepri.FrameAlignPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+
+        <!-- ── Header ─────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="Auto,*,Auto"
+              Padding="20,52,20,12">
+
+            <Button Grid.Column="0"
+                    Text="← BACK"
+                    FontSize="11"
+                    CharacterSpacing="1"
+                    Clicked="OnBackClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                    Padding="0,0,12,0" />
+
+            <Label Grid.Column="1"
+                   Text="{Binding ProgressText}"
+                   FontSize="11"
+                   FontAttributes="Bold"
+                   CharacterSpacing="3"
+                   VerticalOptions="Center"
+                   TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+
+            <ActivityIndicator Grid.Column="1"
+                               IsRunning="{Binding IsBusy}"
+                               IsVisible="{Binding IsBusy}"
+                               HorizontalOptions="End"
+                               VerticalOptions="Center"
+                               Color="{AppThemeBinding Light=Black, Dark=White}"
+                               WidthRequest="16"
+                               HeightRequest="16"
+                               Margin="0,0,4,0" />
+
+            <StackLayout Grid.Column="2"
+                         Orientation="Horizontal"
+                         Spacing="0">
+                <Button Text="RESET"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Command="{Binding ResetCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        Padding="8,0" />
+                <Button Text="RESET ALL"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Command="{Binding ResetAllCommand}"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        Padding="8,0" />
+            </StackLayout>
+
+        </Grid>
+
+        <!-- ── Ghost viewer ───────────────────────────────────────────────── -->
+        <!--
+            Bottom: Frame[CurrentIndex+1] — the frame being repositioned (opaque, draggable).
+            Top:    Frame[CurrentIndex]   — already-aligned reference ghost, rendered at its
+                    saved playback offset so the user sees exactly where it falls in the
+                    timelapse, and drags the background to match.
+        -->
+        <Grid Grid.Row="1"
+              BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#1A1A1A}"
+              x:Name="ViewerGrid">
+
+            <!-- Bottom: frame being repositioned — opaque, draggable -->
+            <Image x:Name="CurrentImage"
+                   Source="{Binding BackgroundPath}"
+                   Aspect="AspectFit"
+                   TranslationX="{Binding OffsetX}"
+                   TranslationY="{Binding OffsetY}" />
+
+            <!-- Top: already-aligned reference ghost — rendered at its saved playback offset, fixed -->
+            <Image x:Name="GhostImage"
+                   Source="{Binding GhostPath}"
+                   Aspect="AspectFit"
+                   Opacity="{Binding GhostOpacity}"
+                   TranslationX="{Binding GhostOffsetX}"
+                   TranslationY="{Binding GhostOffsetY}"
+                   InputTransparent="True" />
+
+            <!-- Center crosshair (reference point) -->
+            <BoxView WidthRequest="1"
+                     HeightRequest="40"
+                     BackgroundColor="#40FFFFFF"
+                     HorizontalOptions="Center"
+                     VerticalOptions="Center"
+                     InputTransparent="True" />
+            <BoxView WidthRequest="40"
+                     HeightRequest="1"
+                     BackgroundColor="#40FFFFFF"
+                     HorizontalOptions="Center"
+                     VerticalOptions="Center"
+                     InputTransparent="True" />
+
+            <Grid.GestureRecognizers>
+                <PanGestureRecognizer PanUpdated="OnPanUpdated" />
+            </Grid.GestureRecognizers>
+
+        </Grid>
+
+        <!-- ── Controls ───────────────────────────────────────────────────── -->
+        <Grid Grid.Row="2"
+              RowDefinitions="Auto,Auto"
+              Padding="20,12,20,40">
+
+            <!-- Ghost opacity slider -->
+            <Grid ColumnDefinitions="Auto,*,Auto">
+
+                <Label Grid.Column="0"
+                       Text="GHOST"
+                       FontSize="9"
+                       FontAttributes="Bold"
+                       CharacterSpacing="2"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                       Margin="0,0,12,0" />
+
+                <Slider Grid.Column="1"
+                        Minimum="0.1" Maximum="0.9"
+                        Value="{Binding GhostOpacity}"
+                        ThumbColor="{AppThemeBinding Light=Black, Dark=White}"
+                        MinimumTrackColor="{AppThemeBinding Light=Black, Dark=White}"
+                        MaximumTrackColor="{AppThemeBinding Light=#DDDDDD, Dark=#333333}" />
+
+                <Label Grid.Column="2"
+                       Text="{Binding GhostOpacity, StringFormat='{0:P0}'}"
+                       FontSize="11"
+                       FontAttributes="Bold"
+                       VerticalOptions="Center"
+                       TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                       MinimumWidthRequest="40"
+                       HorizontalTextAlignment="End" />
+
+            </Grid>
+
+            <!-- PREV / SAVE / NEXT -->
+            <Grid Grid.Row="1"
+                  ColumnDefinitions="*,*,*"
+                  ColumnSpacing="8"
+                  Margin="0,12,0,0">
+
+                <Button Grid.Column="0"
+                        Text="PREV"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2"
+                        Command="{Binding PrevCommand}"
+                        IsEnabled="{Binding CanGoPrev}"
+                        BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#222222}"
+                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                        CornerRadius="0" />
+
+                <Button Grid.Column="1"
+                        Text="SAVE"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2"
+                        Command="{Binding SaveCommand}"
+                        IsEnabled="{Binding IsNotBusy}"
+                        BackgroundColor="{AppThemeBinding Light=Black, Dark=White}"
+                        TextColor="{AppThemeBinding Light=White, Dark=#111111}"
+                        CornerRadius="0" />
+
+                <Button Grid.Column="2"
+                        Text="NEXT"
+                        FontSize="11"
+                        FontAttributes="Bold"
+                        CharacterSpacing="2"
+                        Command="{Binding NextCommand}"
+                        IsEnabled="{Binding CanGoNext}"
+                        BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#222222}"
+                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                        CornerRadius="0" />
+
+            </Grid>
+
+        </Grid>
+
+    </Grid>
+</ContentPage>

@@ -52,8 +52,12 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         await _ioLock.WaitAsync(cancellationToken);
         try
         {
+            string[] dirs;
+            try { dirs = Directory.GetDirectories(root); }
+            catch (UnauthorizedAccessException) { return []; }
+
             var projects = new List<TimelapseProject>();
-            foreach (var dir in Directory.GetDirectories(root))
+            foreach (var dir in dirs)
             {
                 var manifest = Path.Combine(dir, "project.json");
                 if (!File.Exists(manifest))
@@ -61,11 +65,16 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
                     continue;
                 }
 
-                var project = await ReadManifestAsync(manifest, cancellationToken);
-                if (project is not null)
+                try
                 {
-                    projects.Add(project);
+                    var project = await ReadManifestAsync(manifest, cancellationToken);
+                    if (project is not null)
+                    {
+                        projects.Add(project);
+                    }
                 }
+                catch (UnauthorizedAccessException) { return []; }
+                catch (IOException) { /* skip corrupt manifest */ }
             }
             return projects.OrderBy(p => p.CreatedAt).ToList();
         }
@@ -111,7 +120,9 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
                 Index          = f.Index,
                 CapturedAt     = f.CapturedAt,
                 FilePath       = f.FilePath,
-                AlignedFilePath = f.AlignedFilePath
+                AlignedFilePath = f.AlignedFilePath,
+                OffsetX        = f.OffsetX,
+                OffsetY        = f.OffsetY
             }).ToList()
         };
 
@@ -160,7 +171,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         }
 
         var frames = dto.Frames?.Select(f => new TimelapseFrame(
-            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath));
+            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath, f.OffsetX, f.OffsetY));
 
         return new TimelapseProject(dto.Id, dto.Name, dto.CreatedAt, dto.ClonedFromId, frames);
     }
@@ -183,5 +194,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         public DateTimeOffset CapturedAt     { get; set; }
         public string         FilePath       { get; set; } = "";
         public string?        AlignedFilePath { get; set; }
+        public double          OffsetX         { get; set; }
+        public double          OffsetY         { get; set; }
     }
 }
