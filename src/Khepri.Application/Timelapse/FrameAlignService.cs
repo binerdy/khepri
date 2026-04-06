@@ -12,14 +12,16 @@ namespace Khepri.Application.Timelapse;
 public sealed class FrameAlignService(ITimelapseRepository repository)
 {
     /// <summary>
-    /// Stores the drag offset (<paramref name="offsetX"/>, <paramref name="offsetY"/>, in dp)
-    /// on the frame and persists the project.
+    /// Stores the transform offset (<paramref name="offsetX"/>, <paramref name="offsetY"/>, in dp),
+    /// <paramref name="rotation"/> (degrees), and <paramref name="scale"/> on the frame and persists the project.
     /// </summary>
     public async Task SaveAlignmentAsync(
         Guid projectId,
         Guid frameId,
         double offsetX,
         double offsetY,
+        double rotation = 0d,
+        double scale = 1d,
         CancellationToken cancellationToken = default)
     {
         var project = await repository.GetByIdAsync(projectId, cancellationToken)
@@ -28,7 +30,7 @@ public sealed class FrameAlignService(ITimelapseRepository repository)
         var frame = project.Frames.FirstOrDefault(f => f.Id == frameId)
             ?? throw new InvalidOperationException($"Frame {frameId} not found in project {projectId}.");
 
-        frame.SetOffset(offsetX, offsetY);
+        frame.SetTransform(offsetX, offsetY, rotation, scale);
         await repository.SaveAsync(project, cancellationToken);
     }
 
@@ -45,7 +47,7 @@ public sealed class FrameAlignService(ITimelapseRepository repository)
 
         foreach (var frame in project.Frames)
         {
-            frame.SetOffset(0, 0);
+            frame.SetTransform(0, 0, 0, 1);
         }
 
         await repository.SaveAsync(project, cancellationToken);

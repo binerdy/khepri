@@ -10,16 +10,17 @@ public sealed partial class FrameAlignPage : ContentPage
 {
     private readonly FrameAlignViewModel _vm;
 
-    // Accumulated offset at the start of each pan gesture.
-    private double _panBaseX;
-    private double _panBaseY;
-
     public FrameAlignPage(FrameAlignViewModel vm)
     {
         InitializeComponent();
-        _vm         = vm;
+        _vm = vm;
         BindingContext = vm;
+
         _vm.PropertyChanged += OnVmPropertyChanged;
+        _vm.SaveCompleted   += OnSaveCompleted;
+
+        // Wire up the native Android multi-touch listener (pan + pinch + rotate).
+        ViewerGrid.HandlerChanged += OnViewerGridHandlerChanged;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -46,21 +47,32 @@ public sealed partial class FrameAlignPage : ContentPage
         FilmstripView.ScrollTo(activeIdx, position: ScrollToPosition.Center, animate: true);
     }
 
-    // ── Pan gesture ───────────────────────────────────────────────────────────
+    // ── Saved indicator ───────────────────────────────────────────────────────
 
-    private void OnPanUpdated(object? sender, PanUpdatedEventArgs e)
+    private void OnSaveCompleted(object? sender, EventArgs e)
+        => Dispatcher.Dispatch(() => _ = ShowSavedIndicatorAsync());
+
+    private async Task ShowSavedIndicatorAsync()
     {
-        switch (e.StatusType)
-        {
-            case GestureStatus.Started:
-                _panBaseX = _vm.OffsetX;
-                _panBaseY = _vm.OffsetY;
-                break;
+        SavedLabel.Opacity  = 0;
+        SavedLabel.IsVisible = true;
+        await SavedLabel.FadeToAsync(1, 150);
+        await Task.Delay(900);
+        await SavedLabel.FadeToAsync(0, 350);
+        SavedLabel.IsVisible = false;
+    }
 
-            case GestureStatus.Running:
-                _vm.OffsetX = _panBaseX + e.TotalX;
-                _vm.OffsetY = _panBaseY + e.TotalY;
-                break;
+    // ── Android multi-touch ───────────────────────────────────────────────────
+
+    private void OnViewerGridHandlerChanged(object? sender, EventArgs e)
+    {
+#if ANDROID
+        if (ViewerGrid.Handler?.PlatformView is Android.Views.View nativeView)
+        {
+            nativeView.Clickable = true;
+            nativeView.SetOnTouchListener(new AlignmentTouchListener(_vm));
         }
+#endif
     }
 }
+

@@ -53,6 +53,8 @@ public sealed partial class FrameAlignViewModel(
     [NotifyPropertyChangedFor(nameof(GhostPath))]
     [NotifyPropertyChangedFor(nameof(GhostOffsetX))]
     [NotifyPropertyChangedFor(nameof(GhostOffsetY))]
+    [NotifyPropertyChangedFor(nameof(GhostRotation))]
+    [NotifyPropertyChangedFor(nameof(GhostScale))]
     [NotifyPropertyChangedFor(nameof(ProgressText))]
     [NotifyPropertyChangedFor(nameof(FilmstripItems))]
     [NotifyPropertyChangedFor(nameof(CanGoPrev))]
@@ -67,6 +69,8 @@ public sealed partial class FrameAlignViewModel(
 
     [ObservableProperty] public partial double OffsetX { get; set; }
     [ObservableProperty] public partial double OffsetY { get; set; }
+    [ObservableProperty] public partial double Rotation { get; set; }
+    [ObservableProperty] public partial double Scale { get; set; } = 1d;
 
     /// <summary>Opacity for the ghost (next-frame) overlay. Range 0.1 – 0.9.</summary>
     [ObservableProperty] public partial double GhostOpacity { get; set; } = 0.4;
@@ -96,6 +100,14 @@ public sealed partial class FrameAlignViewModel(
     public double GhostOffsetY => (_frames is { Count: > 1 } && CurrentIndex >= 0 && CurrentIndex < _frames.Count - 1)
         ? _frames[CurrentIndex].OffsetY
         : 0;
+
+    public double GhostRotation => (_frames is { Count: > 1 } && CurrentIndex >= 0 && CurrentIndex < _frames.Count - 1)
+        ? _frames[CurrentIndex].Rotation
+        : 0;
+
+    public double GhostScale => (_frames is { Count: > 1 } && CurrentIndex >= 0 && CurrentIndex < _frames.Count - 1)
+        ? _frames[CurrentIndex].Scale
+        : 1d;
 
     /// <summary>e.g. "FRAME 2 / 6" — shows which frame number is being repositioned (1-based).</summary>
     public string ProgressText => FrameCount > 1
@@ -142,14 +154,74 @@ public sealed partial class FrameAlignViewModel(
         SetIndex(0);
     }
 
+    // ─── Auto-save ────────────────────────────────────────────────────────────
+
+    /// <summary>Fired on the calling thread after a successful debounced save.</summary>
+    public event EventHandler? SaveCompleted;
+
+    private CancellationTokenSource? _saveCts;
+
+    /// <summary>
+    /// Debounced auto-save.  Multiple rapid calls within 400 ms coalesce into one write.
+    /// Intended to be fire-and-forget from gesture recognisers.
+    /// </summary>
+    public async Task AutoSaveAsync()
+    {
+        _saveCts?.Cancel();
+        _saveCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _saveCts = cts;
+
+        try
+        {
+            await Task.Delay(400, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return; // superseded by a newer gesture
+        }
+
+        await ExecuteSaveAsync(cts.Token);
+    }
+
+    private async Task ExecuteSaveAsync(CancellationToken cancellationToken)
+    {
+        if (_frames is null || CurrentIndex >= _frames.Count - 1)
+        {
+            return; // preview-only last step has nothing to save
+        }
+
+        IsBusy = true;
+        try
+        {
+            var frame = _frames[CurrentIndex + 1];
+            await alignService.SaveAlignmentAsync(
+                _projectId, frame.Id, OffsetX, OffsetY, Rotation, Scale, cancellationToken);
+            // Keep in-memory list in sync so ghost values reflect saved transforms.
+            frame.SetTransform(OffsetX, OffsetY, Rotation, Scale);
+            SaveCompleted?.Invoke(this, EventArgs.Empty);
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex)
+        {
+            await Shell.Current.DisplayAlertAsync("Save failed", ex.Message, "OK");
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     // ─── Commands ─────────────────────────────────────────────────────────────
 
-    /// <summary>Resets the current frame's offset back to zero in memory (not persisted).</summary>
+    /// <summary>Resets the current frame's transform back to identity in memory (not persisted).</summary>
     [RelayCommand]
     private void Reset()
     {
         OffsetX = 0;
         OffsetY = 0;
+        Rotation = 0;
+        Scale = 1;
     }
 
     [RelayCommand]
@@ -201,59 +273,26 @@ public sealed partial class FrameAlignViewModel(
         }
     }
 
-    [RelayCommand]
-    private async Task SaveAsync(CancellationToken cancellationToken)
-    {
-        if (_frames is null)
-        {
-            return;
-        }
-
-        IsBusy = true;
-        try
-        {
-            // At the last (preview-only) step there is no frame pair to save.
-            if (CurrentIndex >= _frames.Count - 1)
-            {
-                return;
-            }
-
-            // Background = frame[CurrentIndex + 1] — the frame being repositioned.
-            var frame = _frames[CurrentIndex + 1];
-            await alignService.SaveAlignmentAsync(
-                _projectId, frame.Id, OffsetX, OffsetY, cancellationToken);
-            // Keep in-memory list in sync so PREV/NEXT and GhostOffsetX/Y reflect saved values.
-            frame.SetOffset(OffsetX, OffsetY);
-        }
-        catch (OperationCanceledException)
-        {
-            // Navigation cancelled — nothing to surface.
-        }
-        catch (Exception ex)
-        {
-            await Shell.Current.DisplayAlertAsync("Save failed", ex.Message, "OK");
-        }
-        finally
-        {
-            IsBusy = false;
-        }
-    }
-
     private void SetIndex(int index)
     {
         if (_frames is not null && index < _frames.Count)
         {
-            // Load the saved offset of the frame that will be displayed as the background.
+            // Load the saved transform of the frame that will be displayed as the background.
             // At normal alignment steps: background is frame[index + 1].
             // At the last preview-only step: background is frame[index] (the final frame).
             var bgIndex = index < _frames.Count - 1 ? index + 1 : index;
-            OffsetX = _frames[bgIndex].OffsetX;
-            OffsetY = _frames[bgIndex].OffsetY;
+            var bg = _frames[bgIndex];
+            OffsetX  = bg.OffsetX;
+            OffsetY  = bg.OffsetY;
+            Rotation = bg.Rotation;
+            Scale    = bg.Scale;
         }
         else
         {
-            OffsetX = 0;
-            OffsetY = 0;
+            OffsetX  = 0;
+            OffsetY  = 0;
+            Rotation = 0;
+            Scale    = 1;
         }
         CurrentIndex = index;
     }

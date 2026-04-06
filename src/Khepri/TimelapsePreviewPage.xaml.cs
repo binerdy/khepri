@@ -14,6 +14,8 @@ public partial class TimelapsePreviewPage : ContentPage
     private string? _displayedPath;
     private double  _displayedOffsetX;
     private double  _displayedOffsetY;
+    private double  _displayedRotation;
+    private double  _displayedScale = 1d;
 
     public TimelapsePreviewPage(TimelapsePreviewViewModel vm)
     {
@@ -63,6 +65,16 @@ public partial class TimelapsePreviewPage : ContentPage
             _displayedOffsetY = _vm.CurrentOffsetY;
             return;
         }
+        if (e.PropertyName == nameof(TimelapsePreviewViewModel.CurrentRotation))
+        {
+            _displayedRotation = _vm.CurrentRotation;
+            return;
+        }
+        if (e.PropertyName == nameof(TimelapsePreviewViewModel.CurrentScale))
+        {
+            _displayedScale = _vm.CurrentScale;
+            return;
+        }
 
         if (e.PropertyName != nameof(TimelapsePreviewViewModel.CurrentFrameIndex))
         {
@@ -78,12 +90,16 @@ public partial class TimelapsePreviewPage : ContentPage
                 var oldPath    = _displayedPath;
                 var oldOffsetX = _displayedOffsetX;
                 var oldOffsetY = _displayedOffsetY;
+                var oldRotation = _displayedRotation;
+                var oldScale    = _displayedScale;
 
                 if (oldPath != null && oldPath != _vm.CurrentFramePath)
                 {
                     FrameImageOverlay.Source       = ImageSource.FromFile(oldPath);
                     FrameImageOverlay.TranslationX = oldOffsetX;
                     FrameImageOverlay.TranslationY = oldOffsetY;
+                    FrameImageOverlay.Rotation     = oldRotation;
+                    FrameImageOverlay.Scale        = oldScale;
                     FrameImageOverlay.Opacity      = 1;
                     FrameImageOverlay.IsVisible    = true;
                     FrameImage.Opacity             = 0;

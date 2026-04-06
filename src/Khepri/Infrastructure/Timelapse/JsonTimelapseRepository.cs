@@ -122,7 +122,9 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
                 FilePath       = f.FilePath,
                 AlignedFilePath = f.AlignedFilePath,
                 OffsetX        = f.OffsetX,
-                OffsetY        = f.OffsetY
+                OffsetY        = f.OffsetY,
+                Rotation       = f.Rotation,
+                Scale          = f.Scale
             }).ToList()
         };
 
@@ -171,7 +173,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         }
 
         var frames = dto.Frames?.Select(f => new TimelapseFrame(
-            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath, f.OffsetX, f.OffsetY));
+            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath, f.OffsetX, f.OffsetY, f.Rotation, f.Scale));
 
         return new TimelapseProject(dto.Id, dto.Name, dto.CreatedAt, dto.ClonedFromId, frames);
     }
@@ -196,5 +198,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         public string?        AlignedFilePath { get; set; }
         public double          OffsetX         { get; set; }
         public double          OffsetY         { get; set; }
+        public double          Rotation        { get; set; }
+        public double          Scale           { get; set; } = 1d;
     }
 }

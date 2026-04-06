@@ -41,7 +41,9 @@
                    HorizontalOptions="Fill"
                    VerticalOptions="Fill"
                    TranslationX="{Binding CurrentOffsetX}"
-                   TranslationY="{Binding CurrentOffsetY}" />
+                   TranslationY="{Binding CurrentOffsetY}"
+                   Rotation="{Binding CurrentRotation}"
+                   Scale="{Binding CurrentScale}" />
 
             <!-- Dissolve overlay — old frame fades out over the new one; not data-bound -->
             <Image x:Name="FrameImageOverlay"
