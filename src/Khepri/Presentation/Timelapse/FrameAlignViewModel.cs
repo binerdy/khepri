@@ -8,6 +8,9 @@ using Khepri.Domain.Timelapse;
 
 namespace Khepri.Presentation.Timelapse;
 
+/// <summary>A thumbnail entry in the alignment filmstrip.</summary>
+public sealed record FilmstripItem(string FilePath, bool IsActive);
+
 /// <summary>
 /// Drives the ghost-frame manual alignment page.
 ///
@@ -51,12 +54,14 @@ public sealed partial class FrameAlignViewModel(
     [NotifyPropertyChangedFor(nameof(GhostOffsetX))]
     [NotifyPropertyChangedFor(nameof(GhostOffsetY))]
     [NotifyPropertyChangedFor(nameof(ProgressText))]
+    [NotifyPropertyChangedFor(nameof(FilmstripItems))]
     [NotifyPropertyChangedFor(nameof(CanGoPrev))]
     [NotifyPropertyChangedFor(nameof(CanGoNext))]
     public partial int CurrentIndex { get; private set; } = -1;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ProgressText))]
+    [NotifyPropertyChangedFor(nameof(FilmstripItems))]
     [NotifyPropertyChangedFor(nameof(CanGoNext))]
     public partial int FrameCount { get; private set; }
 
@@ -100,6 +105,26 @@ public sealed partial class FrameAlignViewModel(
     public bool CanGoPrev => CurrentIndex > 0;
     public bool CanGoNext => CurrentIndex < FrameCount - 1;
     public bool IsNotBusy => !IsBusy;
+
+    /// <summary>
+    /// Small thumbnails shown below the viewer. The frame currently being repositioned
+    /// (frame[CurrentIndex+1], or frame[N-1] at the preview-only last step) is highlighted.
+    /// </summary>
+    public IReadOnlyList<FilmstripItem> FilmstripItems
+    {
+        get
+        {
+            if (_frames is null || CurrentIndex < 0)
+            {
+                return [];
+            }
+
+            var activeIdx = Math.Min(CurrentIndex + 1, _frames.Count - 1);
+            return _frames
+                .Select((f, i) => new FilmstripItem(f.FilePath, i == activeIdx))
+                .ToList();
+        }
+    }
 
     // ─── Load ─────────────────────────────────────────────────────────────────
 

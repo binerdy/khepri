@@ -51,9 +51,9 @@ public sealed partial class TimelapsePreviewViewModel(
     [ObservableProperty]
     public partial double SecondsPerFrame { get; set; } = 0.5;
 
-    // 0 = None, 1 = Fade
+    // 0 = Dissolve, 1 = None, 2 = Fade, 3 = Flip
     [ObservableProperty]
-    public partial int TransitionIndex { get; set; } = 1;
+    public partial int TransitionIndex { get; set; } = 0;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsNotExporting))]
@@ -88,7 +88,7 @@ public sealed partial class TimelapsePreviewViewModel(
 
     public string ProgressText => FrameCount > 0 ? $"{CurrentFrameIndex + 1} / {FrameCount}" : "—";
 
-    public string[] TransitionNames { get; } = ["None", "Fade", "Flip"];
+    public string[] TransitionNames { get; } = ["Dissolve", "None", "Fade", "Flip"];
 
     // Called from OnNavigatedTo so the page always shows up-to-date offsets,
     // even when it is returned to via the navigation back-stack.
@@ -204,7 +204,7 @@ public sealed partial class TimelapsePreviewViewModel(
 
         try
         {
-            var transition = TransitionIndex == 1 ? TransitionEffect.Fade : TransitionEffect.None;
+            var transition = TransitionIndex == 2 ? TransitionEffect.Fade : TransitionEffect.None;
             var progressReporter = new Progress<int>(pct => ExportProgress = pct / 100.0);
 
             var path = await videoExportService.ExportAsync(

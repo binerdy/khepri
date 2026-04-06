@@ -6,7 +6,7 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Padding="0">
 
         <!-- ── Header ─────────────────────────────────────────────────────── -->
         <Grid Grid.Row="0"
@@ -108,8 +108,43 @@
 
         </Grid>
 
-        <!-- ── Controls ───────────────────────────────────────────────────── -->
-        <Grid Grid.Row="2"
+        <!-- ── Filmstrip ─────────────────────────────────────────────────── -->
+        <CollectionView x:Name="FilmstripView"
+                        Grid.Row="2"
+                        ItemsSource="{Binding FilmstripItems}"
+                        HeightRequest="72"
+                        BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
+                        SelectionMode="None">
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout Orientation="Horizontal" ItemSpacing="4" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="vm:FilmstripItem">
+                    <Border WidthRequest="56"
+                            HeightRequest="56"
+                            Margin="0,8"
+                            Padding="0"
+                            StrokeThickness="0"
+                            Stroke="Transparent">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding IsActive}"
+                                         Value="True">
+                                <Setter Property="Stroke" Value="{AppThemeBinding Light=Black, Dark=White}" />
+                                <Setter Property="StrokeThickness" Value="2" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Image Source="{Binding FilePath}"
+                               Aspect="AspectFill"
+                               WidthRequest="56"
+                               HeightRequest="56" />
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!-- ── Controls ─────────────────────────────────────────────────── -->
+        <Grid Grid.Row="3"
               RowDefinitions="Auto,Auto"
               Padding="20,12,20,40">
 

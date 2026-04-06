@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
 using Khepri.Presentation.Timelapse;
 
 namespace Khepri;
@@ -18,6 +19,7 @@ public sealed partial class FrameAlignPage : ContentPage
         InitializeComponent();
         _vm         = vm;
         BindingContext = vm;
+        _vm.PropertyChanged += OnVmPropertyChanged;
     }
 
     // ── Navigation ────────────────────────────────────────────────────────────
@@ -29,6 +31,19 @@ public sealed partial class FrameAlignPage : ContentPage
     {
         base.OnDisappearing();
         _vm.ResetCommand.Execute(null);
+    }
+
+    // ── Filmstrip scroll ──────────────────────────────────────────────────────
+
+    private void OnVmPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(FrameAlignViewModel.CurrentIndex) || _vm.CurrentIndex < 0)
+        {
+            return;
+        }
+
+        var activeIdx = Math.Min(_vm.CurrentIndex + 1, _vm.FrameCount - 1);
+        FilmstripView.ScrollTo(activeIdx, position: ScrollToPosition.Center, animate: true);
     }
 
     // ── Pan gesture ───────────────────────────────────────────────────────────

@@ -34,6 +34,7 @@
         <!-- ── Preview frame ──────────────────────────────────────────────── -->
         <Grid Grid.Row="1"
               BackgroundColor="Black">
+            <!-- New frame (data-bound, underneath) -->
             <Image x:Name="FrameImage"
                    Source="{Binding CurrentFramePath}"
                    Aspect="AspectFit"
@@ -41,6 +42,14 @@
                    VerticalOptions="Fill"
                    TranslationX="{Binding CurrentOffsetX}"
                    TranslationY="{Binding CurrentOffsetY}" />
+
+            <!-- Dissolve overlay — old frame fades out over the new one; not data-bound -->
+            <Image x:Name="FrameImageOverlay"
+                   Aspect="AspectFit"
+                   HorizontalOptions="Fill"
+                   VerticalOptions="Fill"
+                   IsVisible="False"
+                   InputTransparent="True" />
 
             <Label Text="{Binding ProgressText}"
                    FontSize="10"
