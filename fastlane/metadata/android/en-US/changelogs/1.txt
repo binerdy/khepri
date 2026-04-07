@@ -1,4 +1,4 @@
-Initial release of Khepri — the Swiss timelapse camera app.
+Initial release of Khepri — the timelapse camera app.
 
 • Capture timelapse sequences with your camera
 • Ghost overlay for precise frame alignment

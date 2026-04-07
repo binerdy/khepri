@@ -14,7 +14,7 @@
     Signing key alias. Defaults to 'khepri'.
 #>
 param(
-    [string]$KeystorePath = (Join-Path $PSScriptRoot '..\khepri.keystore'),
+    [string]$KeystorePath = (Join-Path $PSScriptRoot '..\artifacts\khepri.keystore'),
     [string]$KeyAlias     = 'khepri'
 )
 
