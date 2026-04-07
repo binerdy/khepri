@@ -21,6 +21,21 @@
                IsVisible="False"
                InputTransparent="True" />
 
+        <!-- Flip camera button (top-right) -->
+        <Button x:Name="FlipButton"
+                Text="⇄"
+                FontSize="22"
+                WidthRequest="48"
+                HeightRequest="48"
+                CornerRadius="24"
+                BackgroundColor="#66000000"
+                TextColor="White"
+                HorizontalOptions="End"
+                VerticalOptions="Start"
+                Margin="0,52,16,0"
+                IsVisible="False"
+                Clicked="OnFlipClicked" />
+
         <!-- Bottom controls -->
         <VerticalStackLayout VerticalOptions="End"
                              Padding="24,0,24,52"

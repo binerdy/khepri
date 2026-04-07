@@ -13,6 +13,12 @@ public partial class CameraPage : ContentPage
 
     private bool _capturing;
     private bool _cameraStarted;
+    private bool _flipping;
+
+    // Available cameras discovered on first load.
+    private IReadOnlyList<CameraInfo>? _cameras;
+    // Index of the currently active camera in _cameras.
+    private int _activeCameraIndex;
 
     public CameraPage()
     {
@@ -30,8 +36,26 @@ public partial class CameraPage : ContentPage
             return;
         }
 
+        // Discover available cameras and pre-select the rear camera (index 0 fallback).
+        _cameras = await CameraPreview.GetAvailableCameras(CancellationToken.None);
+        if (_cameras.Count > 0)
+        {
+            // Prefer rear camera as the default; fall back to index 0.
+            var rearIdx = -1;
+            for (var i = 0; i < _cameras.Count; i++)
+            {
+                if (_cameras[i].Position == CameraPosition.Rear) { rearIdx = i; break; }
+            }
+            _activeCameraIndex = rearIdx >= 0 ? rearIdx : 0;
+            CameraPreview.SelectedCamera = _cameras[_activeCameraIndex];
+        }
+
         await CameraPreview.StartCameraPreview(CancellationToken.None);
         _cameraStarted = true;
+
+        // Show the flip button only when at least one front and one rear exist.
+        FlipButton.IsVisible = _cameras.Any(c => c.Position == CameraPosition.Front)
+                            && _cameras.Any(c => c.Position == CameraPosition.Rear);
     }
 
     protected override void OnAppearing()
@@ -67,6 +91,48 @@ public partial class CameraPage : ContentPage
 
     private void OnOpacityChanged(object? sender, ValueChangedEventArgs e)
         => OverlayImage.Opacity = e.NewValue;
+
+    private async void OnFlipClicked(object? sender, EventArgs e)
+    {
+        if (_flipping || !_cameraStarted || _cameras is null or { Count: < 2 })
+        {
+            return;
+        }
+
+        _flipping = true;
+        try
+        {
+            // Find the first camera with a different position than the current one.
+            var currentPosition = _cameras[_activeCameraIndex].Position;
+            var nextIndex = -1;
+            for (var i = 0; i < _cameras.Count; i++)
+            {
+                if (i != _activeCameraIndex && _cameras[i].Position != currentPosition)
+                {
+                    nextIndex = i;
+                    break;
+                }
+            }
+            // Fallback: just cycle to the next camera index.
+            if (nextIndex < 0)
+            {
+                nextIndex = (_activeCameraIndex + 1) % _cameras.Count;
+            }
+
+            _cameraStarted = false;
+            CameraPreview.StopCameraPreview();
+
+            _activeCameraIndex = nextIndex;
+            CameraPreview.SelectedCamera = _cameras[_activeCameraIndex];
+
+            await CameraPreview.StartCameraPreview(CancellationToken.None);
+            _cameraStarted = true;
+        }
+        finally
+        {
+            _flipping = false;
+        }
+    }
 
     private async void OnCaptureClicked(object? sender, EventArgs e)
     {
