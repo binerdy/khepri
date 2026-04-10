@@ -39,7 +39,7 @@ _Nothing yet._
 - SAF folder picker result routed through `MainActivity.OnActivityResult`.
 
 **Branding**
-- Animated Swiss splash screen: two rule lines expand from centre, "KHEPRI" fades in, holds, fades out.
+- Animated splash screen: two rule lines expand from centre, "KHEPRI" fades in, holds, fades out.
 - Geometric K app icon and Android splash image; pure black (`#0A0A0A`) background.
 
 **CI/CD**

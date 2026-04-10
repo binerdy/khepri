@@ -50,5 +50,10 @@ public sealed class FrameDisplayItem(TimelapseFrame frame, int position) : INoti
 
     public string Label => $"FRAME {_position}";
 
+    // Flat path accessors — avoid chained paths in XAML bindings which may fall
+    // back to string-path (non-compiled) bindings depending on the MAUI version.
+    public string FrameFilePath => Frame.FilePath;
+    public string FrameDisplayDate => Frame.CapturedAt.ToString("d MMM yyyy", System.Globalization.CultureInfo.CurrentCulture);
+
     public event PropertyChangedEventHandler? PropertyChanged;
 }

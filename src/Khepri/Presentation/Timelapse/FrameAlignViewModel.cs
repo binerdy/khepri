@@ -9,7 +9,12 @@ using Khepri.Domain.Timelapse;
 namespace Khepri.Presentation.Timelapse;
 
 /// <summary>A thumbnail entry in the alignment filmstrip.</summary>
-public sealed record FilmstripItem(string FilePath, bool IsActive);
+public sealed record FilmstripItem(string FilePath, bool IsActive)
+{
+    // Avoid DataTrigger (never compiled by MAUI source gen) — drive StrokeThickness
+    // from a compiled binding; Stroke color is set statically via AppThemeBinding in XAML.
+    public double ActiveStrokeThickness => IsActive ? 2.0 : 0.0;
+}
 
 /// <summary>
 /// Drives the ghost-frame manual alignment page.
@@ -27,21 +32,20 @@ public sealed record FilmstripItem(string FilePath, bool IsActive);
 ///   SAVE  — persist the current offset without navigating.
 ///   NEXT  — navigate forward (no save).
 /// </summary>
-[QueryProperty(nameof(RawProjectId), "projectId")]
 public sealed partial class FrameAlignViewModel(
     TimelapseService timelapseService,
-    FrameAlignService alignService) : ObservableObject
+    FrameAlignService alignService) : ObservableObject, IQueryAttributable
 {
     private Guid _projectId;
     private List<TimelapseFrame>? _frames;
 
     // ─── Query property ───────────────────────────────────────────────────────
 
-    public string RawProjectId
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        set
+        if (query.TryGetValue("projectId", out var value))
         {
-            _projectId = Guid.Parse(value);
+            _projectId = Guid.Parse(value?.ToString() ?? string.Empty);
             _ = LoadAsync();
         }
     }
@@ -142,14 +146,14 @@ public sealed partial class FrameAlignViewModel(
 
     private async Task LoadAsync()
     {
-        var all     = await timelapseService.GetAllProjectsAsync();
+        var all = await timelapseService.GetAllProjectsAsync();
         var project = all.FirstOrDefault(p => p.Id == _projectId);
         if (project is null)
         {
             return;
         }
 
-        _frames    = project.Frames.OrderBy(f => f.Index).ToList();
+        _frames = project.Frames.OrderBy(f => f.Index).ToList();
         FrameCount = _frames.Count;
         SetIndex(0);
     }
@@ -212,6 +216,12 @@ public sealed partial class FrameAlignViewModel(
         }
     }
 
+    // Explicit declaration so the MAUI XAML source generator can produce a compiled
+    // (trim-safe) binding — source-gen-produced [RelayCommand] properties are
+    // invisible to the parallel MAUI source generator at build time.
+    private AsyncRelayCommand? _resetAllCommand;
+    public IAsyncRelayCommand ResetAllCommand => _resetAllCommand ??= new AsyncRelayCommand(ResetAllAsync);
+
     // ─── Commands ─────────────────────────────────────────────────────────────
 
     /// <summary>Resets the current frame's transform back to identity in memory (not persisted).</summary>
@@ -224,7 +234,6 @@ public sealed partial class FrameAlignViewModel(
         Scale = 1;
     }
 
-    [RelayCommand]
     private async Task ResetAllAsync(CancellationToken cancellationToken)
     {
         var confirmed = await Shell.Current.DisplayAlertAsync(
@@ -282,17 +291,17 @@ public sealed partial class FrameAlignViewModel(
             // At the last preview-only step: background is frame[index] (the final frame).
             var bgIndex = index < _frames.Count - 1 ? index + 1 : index;
             var bg = _frames[bgIndex];
-            OffsetX  = bg.OffsetX;
-            OffsetY  = bg.OffsetY;
+            OffsetX = bg.OffsetX;
+            OffsetY = bg.OffsetY;
             Rotation = bg.Rotation;
-            Scale    = bg.Scale;
+            Scale = bg.Scale;
         }
         else
         {
-            OffsetX  = 0;
-            OffsetY  = 0;
+            OffsetX = 0;
+            OffsetY = 0;
             Rotation = 0;
-            Scale    = 1;
+            Scale = 1;
         }
         CurrentIndex = index;
     }

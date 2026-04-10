@@ -24,11 +24,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     // same file.  A single lock is fine for a single-user mobile app.
     private static readonly SemaphoreSlim _ioLock = new(1, 1);
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
+    private static KhepriJsonContext JsonContext => KhepriJsonContext.Default;
 
     private readonly IStorageRootService _storageRoot;
 
@@ -110,32 +106,32 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
 
         var dto = new ProjectDto
         {
-            Id          = project.Id,
-            Name        = project.Name,
-            CreatedAt   = project.CreatedAt,
+            Id = project.Id,
+            Name = project.Name,
+            CreatedAt = project.CreatedAt,
             ClonedFromId = project.ClonedFromId,
-            Frames      = project.Frames.Select(f => new FrameDto
+            Frames = project.Frames.Select(f => new FrameDto
             {
-                Id             = f.Id,
-                Index          = f.Index,
-                CapturedAt     = f.CapturedAt,
-                FilePath       = f.FilePath,
+                Id = f.Id,
+                Index = f.Index,
+                CapturedAt = f.CapturedAt,
+                FilePath = f.FilePath,
                 AlignedFilePath = f.AlignedFilePath,
-                OffsetX        = f.OffsetX,
-                OffsetY        = f.OffsetY,
-                Rotation       = f.Rotation,
-                Scale          = f.Scale
+                OffsetX = f.OffsetX,
+                OffsetY = f.OffsetY,
+                Rotation = f.Rotation,
+                Scale = f.Scale
             }).ToList()
         };
 
         // Serialize into memory first so the file is never left in a partial
         // state and we hold the stream open for the shortest possible time.
         using var mem = new MemoryStream();
-        await JsonSerializer.SerializeAsync(mem, dto, JsonOptions, cancellationToken);
+        await JsonSerializer.SerializeAsync(mem, dto, JsonContext.ProjectDto, cancellationToken);
         var bytes = mem.ToArray();
 
         var finalPath = ManifestPath(project.Id);
-        var tempPath  = finalPath + ".tmp";
+        var tempPath = finalPath + ".tmp";
 
         await _ioLock.WaitAsync(cancellationToken);
         try
@@ -166,7 +162,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     private static async Task<TimelapseProject?> ReadManifestAsync(string path, CancellationToken cancellationToken)
     {
         await using var stream = File.OpenRead(path);
-        var dto = await JsonSerializer.DeserializeAsync<ProjectDto>(stream, JsonOptions, cancellationToken);
+        var dto = await JsonSerializer.DeserializeAsync(stream, JsonContext.ProjectDto, cancellationToken);
         if (dto is null)
         {
             return null;
@@ -179,26 +175,32 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
     }
 
     // ── DTOs ──────────────────────────────────────────────────────────────────
-
-    private sealed class ProjectDto
-    {
-        public Guid             Id          { get; set; }
-        public string           Name        { get; set; } = "";
-        public DateTimeOffset   CreatedAt   { get; set; }
-        public Guid?            ClonedFromId { get; set; }
-        public List<FrameDto>?  Frames      { get; set; }
-    }
-
-    private sealed class FrameDto
-    {
-        public Guid           Id             { get; set; }
-        public int            Index          { get; set; }
-        public DateTimeOffset CapturedAt     { get; set; }
-        public string         FilePath       { get; set; } = "";
-        public string?        AlignedFilePath { get; set; }
-        public double          OffsetX         { get; set; }
-        public double          OffsetY         { get; set; }
-        public double          Rotation        { get; set; }
-        public double          Scale           { get; set; } = 1d;
-    }
 }
+
+internal sealed class ProjectDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = "";
+    public DateTimeOffset CreatedAt { get; set; }
+    public Guid? ClonedFromId { get; set; }
+    public List<FrameDto>? Frames { get; set; }
+}
+
+internal sealed class FrameDto
+{
+    public Guid Id { get; set; }
+    public int Index { get; set; }
+    public DateTimeOffset CapturedAt { get; set; }
+    public string FilePath { get; set; } = "";
+    public string? AlignedFilePath { get; set; }
+    public double OffsetX { get; set; }
+    public double OffsetY { get; set; }
+    public double Rotation { get; set; }
+    public double Scale { get; set; } = 1d;
+}
+
+// ── JSON source-gen context ────────────────────────────────────────────
+
+[JsonSourceGenerationOptions(WriteIndented = true, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
+[JsonSerializable(typeof(ProjectDto))]
+internal sealed partial class KhepriJsonContext : JsonSerializerContext { }

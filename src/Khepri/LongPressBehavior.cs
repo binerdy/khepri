@@ -7,7 +7,7 @@ namespace Khepri;
 
 /// <summary>
 /// Message sent when a long-press gesture is detected on any item.
-/// <see cref="Item"/> is the <see cref="Microsoft.Maui.Controls.BindableObject.BindingContext"/>
+/// <see cref="Item"/> is the <see cref="BindableObject.BindingContext"/>
 /// of the pressed view (e.g. a <c>ProjectDisplayItem</c> or <c>FrameDisplayItem</c>).
 /// </summary>
 public record LongPressMessage(object? Item = null);
@@ -67,11 +67,8 @@ public class LongPressBehavior : Behavior<View>
     {
         _longPressCts?.Cancel();
         _longPressCts = null;
-        if (_nativeView is not null)
-        {
-            _nativeView.Touch -= OnNativeTouch;
-            _nativeView = null;
-        }
+        _nativeView?.Touch -= OnNativeTouch;
+        _nativeView = null;
         _mauiView = null;
     }
 

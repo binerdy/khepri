@@ -9,7 +9,7 @@ namespace Khepri;
 public partial class CameraPage : ContentPage
 {
     public string? OverlayImagePath { get; set; }
-    public string?  FramesDir        { get; set; }
+    public string? FramesDir { get; set; }
 
     private bool _capturing;
     private bool _cameraStarted;
@@ -62,14 +62,14 @@ public partial class CameraPage : ContentPage
     {
         base.OnAppearing();
 
-        CameraPreview.MediaCaptured      += OnMediaCaptured;
+        CameraPreview.MediaCaptured += OnMediaCaptured;
         CameraPreview.MediaCaptureFailed += OnMediaCaptureFailed;
 
         if (!string.IsNullOrEmpty(OverlayImagePath) && File.Exists(OverlayImagePath))
         {
-            OverlayImage.Source     = ImageSource.FromFile(OverlayImagePath);
-            OverlayImage.Opacity    = OpacitySlider.Value;
-            OverlayImage.IsVisible  = true;
+            OverlayImage.Source = ImageSource.FromFile(OverlayImagePath);
+            OverlayImage.Opacity = OpacitySlider.Value;
+            OverlayImage.IsVisible = true;
             OpacitySlider.IsVisible = true;
         }
     }
@@ -77,7 +77,7 @@ public partial class CameraPage : ContentPage
     protected override void OnDisappearing()
     {
         base.OnDisappearing();
-        CameraPreview.MediaCaptured      -= OnMediaCaptured;
+        CameraPreview.MediaCaptured -= OnMediaCaptured;
         CameraPreview.MediaCaptureFailed -= OnMediaCaptureFailed;
 
         // Safety-net: only stop if the capture/cancel paths haven't already done so.

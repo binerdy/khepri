@@ -20,7 +20,7 @@ The app is structured around independent features, each self-contained with no c
 
 ## Design Language
 
-**Swiss Modernist / International Typographic Style.**
+**Modernist / International Typographic Style.**
 
 - **Palette**: pure black and white as primary tones; a single mid-grey for secondary text. No decorative colour. Light/dark mode both follow the same rule — invert the palette.
 - **Typography**: uppercase labels with letter-spacing for titles and categories; mixed-case for body text. No custom fonts — system default (Roboto / San Francisco).

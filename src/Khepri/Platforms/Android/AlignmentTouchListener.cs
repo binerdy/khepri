@@ -5,7 +5,6 @@ using Android.Runtime;
 using Android.Views;
 using Khepri.Presentation.Timelapse;
 using AView = Android.Views.View;
-using AMotionEvent = Android.Views.MotionEvent;
 
 namespace Khepri;
 
@@ -27,7 +26,7 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
 
     // ── Two-finger gesture baseline ───────────────────────────────────────────
 
-    private bool  _twoFingerActive;
+    private bool _twoFingerActive;
     private float _baseInitMidX;
     private float _baseInitMidY;
     private float _baseInitDist;
@@ -48,7 +47,7 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
         }
 
         // Convert raw pixel deltas to density-independent pixels.
-        float density = v?.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
+        var density = v?.Context?.Resources?.DisplayMetrics?.Density ?? 1f;
 
         switch (e.ActionMasked)
         {
@@ -59,40 +58,40 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
                 return true;
 
             case MotionEventActions.PointerDown when e.PointerCount == 2:
-            {
-                _twoFingerActive = true;
-                float x0 = e.GetX(0), y0 = e.GetY(0);
-                float x1 = e.GetX(1), y1 = e.GetY(1);
-                _baseInitMidX  = (x0 + x1) * 0.5f;
-                _baseInitMidY  = (y0 + y1) * 0.5f;
-                _baseInitDist  = Distance(x0, y0, x1, y1);
-                _baseInitAngle = AngleRad(x0, y0, x1, y1);
-                _baseOffsetX   = _vm.OffsetX;
-                _baseOffsetY   = _vm.OffsetY;
-                _baseScale     = _vm.Scale;
-                _baseRotation  = _vm.Rotation;
-                return true;
-            }
+                {
+                    _twoFingerActive = true;
+                    float x0 = e.GetX(0), y0 = e.GetY(0);
+                    float x1 = e.GetX(1), y1 = e.GetY(1);
+                    _baseInitMidX = (x0 + x1) * 0.5f;
+                    _baseInitMidY = (y0 + y1) * 0.5f;
+                    _baseInitDist = Distance(x0, y0, x1, y1);
+                    _baseInitAngle = AngleRad(x0, y0, x1, y1);
+                    _baseOffsetX = _vm.OffsetX;
+                    _baseOffsetY = _vm.OffsetY;
+                    _baseScale = _vm.Scale;
+                    _baseRotation = _vm.Rotation;
+                    return true;
+                }
 
             case MotionEventActions.Move:
                 if (_twoFingerActive && e.PointerCount >= 2)
                 {
-                    float x0  = e.GetX(0), y0 = e.GetY(0);
-                    float x1  = e.GetX(1), y1 = e.GetY(1);
-                    float midX = (x0 + x1) * 0.5f;
-                    float midY = (y0 + y1) * 0.5f;
-                    float dist  = Distance(x0, y0, x1, y1);
-                    float angle = AngleRad(x0, y0, x1, y1);
+                    float x0 = e.GetX(0), y0 = e.GetY(0);
+                    float x1 = e.GetX(1), y1 = e.GetY(1);
+                    var midX = (x0 + x1) * 0.5f;
+                    var midY = (y0 + y1) * 0.5f;
+                    var dist = Distance(x0, y0, x1, y1);
+                    var angle = AngleRad(x0, y0, x1, y1);
 
-                    _vm.Scale    = _baseScale * (dist / _baseInitDist);
+                    _vm.Scale = _baseScale * (dist / _baseInitDist);
                     _vm.Rotation = _baseRotation + (angle - _baseInitAngle) * (180.0 / Math.PI);
-                    _vm.OffsetX  = _baseOffsetX + (midX - _baseInitMidX) / density;
-                    _vm.OffsetY  = _baseOffsetY + (midY - _baseInitMidY) / density;
+                    _vm.OffsetX = _baseOffsetX + (midX - _baseInitMidX) / density;
+                    _vm.OffsetY = _baseOffsetY + (midY - _baseInitMidY) / density;
                 }
                 else if (!_twoFingerActive && e.PointerCount == 1)
                 {
-                    float dx = e.GetX(0) - _panPrevX;
-                    float dy = e.GetY(0) - _panPrevY;
+                    var dx = e.GetX(0) - _panPrevX;
+                    var dy = e.GetY(0) - _panPrevY;
                     _vm.OffsetX += dx / density;
                     _vm.OffsetY += dy / density;
                     _panPrevX = e.GetX(0);
@@ -101,16 +100,16 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
                 return true;
 
             case MotionEventActions.PointerUp when e.PointerCount == 2:
-            {
-                // One finger lifted from a two-finger touch.
-                // Switch back to one-finger pan from the remaining pointer.
-                _twoFingerActive = false;
-                int remaining = e.ActionIndex == 0 ? 1 : 0;
-                _panPrevX = e.GetX(remaining);
-                _panPrevY = e.GetY(remaining);
-                _ = _vm.AutoSaveAsync();
-                return true;
-            }
+                {
+                    // One finger lifted from a two-finger touch.
+                    // Switch back to one-finger pan from the remaining pointer.
+                    _twoFingerActive = false;
+                    var remaining = e.ActionIndex == 0 ? 1 : 0;
+                    _panPrevX = e.GetX(remaining);
+                    _panPrevY = e.GetY(remaining);
+                    _ = _vm.AutoSaveAsync();
+                    return true;
+                }
 
             case MotionEventActions.Up:
             case MotionEventActions.Cancel:

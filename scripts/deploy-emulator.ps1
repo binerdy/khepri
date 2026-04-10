@@ -15,7 +15,8 @@
 param(
     [string]$Avd      = 'Khepri_Pixel9Pro_API36',
     [int]   $ApiLevel = 36,
-    [switch]$NoLaunch
+    [switch]$NoLaunch,
+    [switch]$Release
 )
 
 Set-StrictMode -Version Latest
@@ -191,10 +192,11 @@ if (-not $NoLaunch) {
 
 # ── 4. Build and deploy ───────────────────────────────────────────────────────
 
-Write-Step "Building and deploying Khepri (net10.0-android)..."
+$config = if ($Release) { 'Release' } else { 'Debug' }
+Write-Step "Building and deploying Khepri (net10.0-android, $config)..."
 Write-Host ""
 
-& dotnet build $ProjectPath -f net10.0-android -t:Run
+& dotnet build $ProjectPath -f net10.0-android -c $config -t:Run
 
 if ($LASTEXITCODE -ne 0) {
     Write-Fail "Build or deploy failed (exit code $LASTEXITCODE)."

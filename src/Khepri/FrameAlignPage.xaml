@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Khepri.Presentation.Timelapse"
              x:Class="Khepri.FrameAlignPage"
+             x:DataType="vm:FrameAlignViewModel"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
 
@@ -139,16 +140,8 @@
                             HeightRequest="56"
                             Margin="0,8"
                             Padding="0"
-                            StrokeThickness="0"
-                            Stroke="Transparent">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border"
-                                         Binding="{Binding IsActive}"
-                                         Value="True">
-                                <Setter Property="Stroke" Value="{AppThemeBinding Light=Black, Dark=White}" />
-                                <Setter Property="StrokeThickness" Value="2" />
-                            </DataTrigger>
-                        </Border.Triggers>
+                            Stroke="{AppThemeBinding Light=Black, Dark=White}"
+                            StrokeThickness="{Binding ActiveStrokeThickness}">
                         <Image Source="{Binding FilePath}"
                                Aspect="AspectFill"
                                WidthRequest="56"

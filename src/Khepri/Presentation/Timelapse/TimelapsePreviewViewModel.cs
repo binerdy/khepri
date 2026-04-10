@@ -7,10 +7,9 @@ using Khepri.Application.Timelapse;
 
 namespace Khepri.Presentation.Timelapse;
 
-[QueryProperty(nameof(RawProjectId), "projectId")]
 public sealed partial class TimelapsePreviewViewModel(
     TimelapseService timelapseService,
-    IVideoExportService videoExportService) : ObservableObject
+    IVideoExportService videoExportService) : ObservableObject, IQueryAttributable
 {
     private Guid _projectId;
     private IReadOnlyList<string>? _framePaths;
@@ -20,11 +19,11 @@ public sealed partial class TimelapsePreviewViewModel(
     private IDispatcherTimer? _timer;
     private int _currentIndex;
 
-    public string RawProjectId
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        set
+        if (query.TryGetValue("projectId", out var value))
         {
-            _projectId = Guid.Parse(value);
+            _projectId = Guid.Parse(value?.ToString() ?? string.Empty);
             _ = LoadAsync();
         }
     }
@@ -72,7 +71,7 @@ public sealed partial class TimelapsePreviewViewModel(
 
     public string SettingsToggleText => ShowSettings ? "▲ SETTINGS" : "▼ SETTINGS";
 
-    public bool IsNotPlaying   => !IsPlaying;
+    public bool IsNotPlaying => !IsPlaying;
     public bool IsNotExporting => !IsExporting;
 
     public string? CurrentFramePath
@@ -129,14 +128,14 @@ public sealed partial class TimelapsePreviewViewModel(
             return;
         }
 
-        ProjectName     = project.Name.ToUpperInvariant();
-        var ordered        = project.Frames.OrderBy(f => f.Index).ToList();
-        _framePaths      = ordered.Select(f => f.ActiveFilePath).ToList();
-        _frameOffsets    = ordered.Select(f => (f.OffsetX, f.OffsetY)).ToList();
-        _frameRotations  = ordered.Select(f => f.Rotation).ToList();
-        _frameScales     = ordered.Select(f => f.Scale).ToList();
-        _currentIndex    = 0;
-        FrameCount       = _framePaths.Count;
+        ProjectName = project.Name.ToUpperInvariant();
+        var ordered = project.Frames.OrderBy(f => f.Index).ToList();
+        _framePaths = ordered.Select(f => f.ActiveFilePath).ToList();
+        _frameOffsets = ordered.Select(f => (f.OffsetX, f.OffsetY)).ToList();
+        _frameRotations = ordered.Select(f => f.Rotation).ToList();
+        _frameScales = ordered.Select(f => f.Scale).ToList();
+        _currentIndex = 0;
+        FrameCount = _framePaths.Count;
         CurrentFrameIndex = 0;
         // [ObservableProperty] skips notification when the value is unchanged (0→0).
         // Manually notify so the image and offset bindings always reflect the
@@ -235,7 +234,7 @@ public sealed partial class TimelapsePreviewViewModel(
             await Share.Default.RequestAsync(new ShareFileRequest
             {
                 Title = $"{ProjectName ?? "Timelapse"}.mp4",
-                File  = new ShareFile(path, "video/mp4"),
+                File = new ShareFile(path, "video/mp4"),
             });
         }
         catch (OperationCanceledException)

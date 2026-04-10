@@ -6,14 +6,9 @@ using Khepri.Domain.Timelapse;
 namespace Khepri.Infrastructure.Timelapse;
 
 /// <summary>
-/// Fallback implementation for non-Android platforms.
-/// Uses the MAUI app-data directory (no user interaction required).
+/// Storage root for non-Android platforms — uses the MAUI app-data directory.
 /// </summary>
 public sealed class DefaultStorageRootService : IStorageRootService
 {
-    public bool HasRootFolder => true;
-
     public string RootFolderPath => FileSystem.AppDataDirectory;
-
-    public Task<bool> RequestRootFolderAsync() => Task.FromResult(true);
 }

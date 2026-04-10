@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Exposes the app cache directory so exported .khepri files can be shared -->
+    <cache-path name="khepri_exports" path="exports/" />
+</paths>

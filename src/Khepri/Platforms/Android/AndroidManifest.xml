@@ -1,14 +1,23 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true"
-	             android:requestLegacyExternalStorage="true"></application>
+	<application android:allowBackup="true" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true">
+
+		<!-- FileProvider: exposes cache-dir .khepri export files to the share sheet -->
+		<provider
+			android:name="androidx.core.content.FileProvider"
+			android:authorities="${applicationId}.fileprovider"
+			android:exported="false"
+			android:grantUriPermissions="true">
+			<meta-data
+				android:name="android.support.FILE_PROVIDER_PATHS"
+				android:resource="@xml/file_paths" />
+		</provider>
+
+	</application>
 	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 	<uses-permission android:name="android.permission.INTERNET" />
 	<uses-permission android:name="android.permission.CAMERA" />
-	<!-- External storage — persists after uninstall -->
-	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"  android:maxSdkVersion="32" />
-	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
-	<uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+	<uses-permission android:name="com.android.vending.BILLING" />
 	<uses-feature android:name="android.hardware.camera" android:required="false" />
 	<queries>
 		<intent>

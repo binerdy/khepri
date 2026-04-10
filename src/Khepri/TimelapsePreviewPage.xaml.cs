@@ -12,10 +12,10 @@ public partial class TimelapsePreviewPage : ContentPage
 
     // Tracks what is currently rendered so the dissolve overlay can show the outgoing frame.
     private string? _displayedPath;
-    private double  _displayedOffsetX;
-    private double  _displayedOffsetY;
-    private double  _displayedRotation;
-    private double  _displayedScale = 1d;
+    private double _displayedOffsetX;
+    private double _displayedOffsetY;
+    private double _displayedRotation;
+    private double _displayedScale = 1d;
 
     public TimelapsePreviewPage(TimelapsePreviewViewModel vm)
     {
@@ -86,39 +86,39 @@ public partial class TimelapsePreviewPage : ContentPage
         switch (_vm.TransitionIndex)
         {
             case 0: // Dissolve — old frame fades out while new frame fades in beneath it
-            {
-                var oldPath    = _displayedPath;
-                var oldOffsetX = _displayedOffsetX;
-                var oldOffsetY = _displayedOffsetY;
-                var oldRotation = _displayedRotation;
-                var oldScale    = _displayedScale;
-
-                if (oldPath != null && oldPath != _vm.CurrentFramePath)
                 {
-                    FrameImageOverlay.Source       = ImageSource.FromFile(oldPath);
-                    FrameImageOverlay.TranslationX = oldOffsetX;
-                    FrameImageOverlay.TranslationY = oldOffsetY;
-                    FrameImageOverlay.Rotation     = oldRotation;
-                    FrameImageOverlay.Scale        = oldScale;
-                    FrameImageOverlay.Opacity      = 1;
-                    FrameImageOverlay.IsVisible    = true;
-                    FrameImage.Opacity             = 0;
+                    var oldPath = _displayedPath;
+                    var oldOffsetX = _displayedOffsetX;
+                    var oldOffsetY = _displayedOffsetY;
+                    var oldRotation = _displayedRotation;
+                    var oldScale = _displayedScale;
 
-                    // Yield so MAUI bindings update FrameImage to the new frame.
-                    await Task.Yield();
+                    if (oldPath != null && oldPath != _vm.CurrentFramePath)
+                    {
+                        FrameImageOverlay.Source = ImageSource.FromFile(oldPath);
+                        FrameImageOverlay.TranslationX = oldOffsetX;
+                        FrameImageOverlay.TranslationY = oldOffsetY;
+                        FrameImageOverlay.Rotation = oldRotation;
+                        FrameImageOverlay.Scale = oldScale;
+                        FrameImageOverlay.Opacity = 1;
+                        FrameImageOverlay.IsVisible = true;
+                        FrameImage.Opacity = 0;
 
-                    await Task.WhenAll(
-                        FrameImageOverlay.FadeToAsync(0, 350),
-                        FrameImage.FadeToAsync(1, 350));
+                        // Yield so MAUI bindings update FrameImage to the new frame.
+                        await Task.Yield();
 
-                    FrameImageOverlay.IsVisible = false;
+                        await Task.WhenAll(
+                            FrameImageOverlay.FadeToAsync(0, 350),
+                            FrameImage.FadeToAsync(1, 350));
+
+                        FrameImageOverlay.IsVisible = false;
+                    }
+                    else
+                    {
+                        FrameImage.Opacity = 1;
+                    }
+                    break;
                 }
-                else
-                {
-                    FrameImage.Opacity = 1;
-                }
-                break;
-            }
 
             case 1: // None
                 FrameImage.Opacity = 1;

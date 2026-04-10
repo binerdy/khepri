@@ -9,17 +9,15 @@ using Khepri.Domain.Timelapse;
 
 namespace Khepri.Presentation.Timelapse;
 
-[QueryProperty(nameof(ProjectId), "projectId")]
-public sealed partial class ProjectDetailViewModel(TimelapseService timelapseService) : ObservableObject
+public sealed partial class ProjectDetailViewModel(TimelapseService timelapseService) : ObservableObject, IQueryAttributable
 {
     private Guid _projectId;
 
-    // Shell passes the query parameter as a string.
-    public string ProjectId
+    public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        set
+        if (query.TryGetValue("projectId", out var value))
         {
-            _projectId = Guid.Parse(value);
+            _projectId = Guid.Parse(value?.ToString() ?? string.Empty);
             _ = LoadCommand.ExecuteAsync(null);
         }
     }
@@ -43,10 +41,19 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
     public partial int SelectedCount { get; set; }
 
     public bool IsNotSelecting => !IsSelecting;
-    public bool HasSelection   => SelectedCount > 0;
-    public bool HasFrames      => Project?.Frames.Count > 0;
+    public bool HasSelection => SelectedCount > 0;
+    public bool HasFrames => Project?.Frames.Count > 0;
 
     public ObservableCollection<FrameDisplayItem> DisplayFrames { get; } = [];
+
+    // Explicit declarations so the MAUI XAML source generator can produce compiled
+    // (trim-safe) bindings — source-gen-produced [RelayCommand] properties are
+    // invisible to the parallel MAUI source generator at build time.
+    private AsyncRelayCommand? _captureCommand;
+    public IAsyncRelayCommand CaptureCommand => _captureCommand ??= new AsyncRelayCommand(CaptureAsync);
+
+    private AsyncRelayCommand? _retakeCommand;
+    public IAsyncRelayCommand RetakeCommand => _retakeCommand ??= new AsyncRelayCommand(RetakeAsync);
 
     [RelayCommand]
     private void EnterSelectMode()
@@ -136,7 +143,6 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
         await LoadAsync(cancellationToken);
     }
 
-    [RelayCommand]
     private async Task CaptureAsync(CancellationToken cancellationToken)
     {
         IsBusy = true;
@@ -159,7 +165,6 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
         }
     }
 
-    [RelayCommand]
     private async Task RetakeAsync(CancellationToken cancellationToken)
     {
         IsBusy = true;

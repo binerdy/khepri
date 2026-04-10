@@ -30,9 +30,9 @@ public sealed partial class ProjectListViewModel(TimelapseService timelapseServi
     [NotifyPropertyChangedFor(nameof(IsNotSelectingOrHasSingleSelection))]
     public partial int SelectedCount { get; set; }
 
-    public bool IsNotSelecting                  => !IsSelecting;
-    public bool HasSelection                    => SelectedCount > 0;
-    public bool HasSingleSelection              => SelectedCount == 1;
+    public bool IsNotSelecting => !IsSelecting;
+    public bool HasSelection => SelectedCount > 0;
+    public bool HasSingleSelection => SelectedCount == 1;
     // Clone button: always tappable when not selecting; disabled while selecting with ≠1 item
     public bool IsNotSelectingOrHasSingleSelection => !IsSelecting || SelectedCount == 1;
 

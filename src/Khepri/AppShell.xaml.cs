@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace Khepri;
@@ -12,9 +12,9 @@ public partial class AppShell : Shell
     {
         _splash = splash;
         InitializeComponent();
-        Routing.RegisterRoute("ProjectDetail",    typeof(ProjectDetailPage));
+        Routing.RegisterRoute("ProjectDetail", typeof(ProjectDetailPage));
         Routing.RegisterRoute("TimelapsePreview", typeof(TimelapsePreviewPage));
-        Routing.RegisterRoute("FrameAlign",       typeof(FrameAlignPage));
+        Routing.RegisterRoute("FrameAlign", typeof(FrameAlignPage));
     }
 
     protected override async void OnAppearing()

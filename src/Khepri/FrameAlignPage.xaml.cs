@@ -17,7 +17,7 @@ public sealed partial class FrameAlignPage : ContentPage
         BindingContext = vm;
 
         _vm.PropertyChanged += OnVmPropertyChanged;
-        _vm.SaveCompleted   += OnSaveCompleted;
+        _vm.SaveCompleted += OnSaveCompleted;
 
         // Wire up the native Android multi-touch listener (pan + pinch + rotate).
         ViewerGrid.HandlerChanged += OnViewerGridHandlerChanged;
@@ -54,7 +54,7 @@ public sealed partial class FrameAlignPage : ContentPage
 
     private async Task ShowSavedIndicatorAsync()
     {
-        SavedLabel.Opacity  = 0;
+        SavedLabel.Opacity = 0;
         SavedLabel.IsVisible = true;
         await SavedLabel.FadeToAsync(1, 150);
         await Task.Delay(900);

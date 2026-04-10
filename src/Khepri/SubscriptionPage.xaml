@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Khepri.SubscriptionPage"
+             BackgroundColor="Black"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="Auto,*,Auto"
+          Padding="32,56,32,40">
+
+        <!-- Header -->
+        <VerticalStackLayout Grid.Row="0" Spacing="10">
+            <Label Text="KHEPRI"
+                   FontSize="22"
+                   FontAttributes="Bold"
+                   CharacterSpacing="9"
+                   TextColor="White" />
+            <BoxView HeightRequest="1" Color="White" />
+            <Label Text="UNLOCK FULL ACCESS"
+                   FontSize="11"
+                   CharacterSpacing="3"
+                   TextColor="#888888" />
+        </VerticalStackLayout>
+
+        <!-- Plan cards -->
+        <VerticalStackLayout Grid.Row="1"
+                             Spacing="20"
+                             VerticalOptions="Center">
+
+            <!-- Monthly -->
+            <Border x:Name="MonthlyBorder"
+                    Stroke="#444444"
+                    StrokeThickness="1"
+                    Padding="20,18"
+                    BackgroundColor="Transparent">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="0" />
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnMonthlyTapped" />
+                </Border.GestureRecognizers>
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="MONTHLY"
+                               FontSize="11"
+                               CharacterSpacing="3"
+                               TextColor="#888888" />
+                        <Label x:Name="MonthlyPrice"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="#888888" />
+                    </VerticalStackLayout>
+                    <Label x:Name="MonthlyCheck"
+                           Grid.Column="1"
+                           Text="✓"
+                           FontSize="18"
+                           TextColor="White"
+                           VerticalOptions="Center"
+                           IsVisible="False" />
+                </Grid>
+            </Border>
+
+            <!-- Annual (selected by default) -->
+            <Border x:Name="AnnualBorder"
+                    Stroke="White"
+                    StrokeThickness="1"
+                    Padding="20,18"
+                    BackgroundColor="Transparent">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="0" />
+                </Border.StrokeShape>
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAnnualTapped" />
+                </Border.GestureRecognizers>
+                <Grid ColumnDefinitions="*,Auto">
+                    <VerticalStackLayout Grid.Column="0" Spacing="4">
+                        <Label Text="ANNUAL"
+                               FontSize="11"
+                               CharacterSpacing="3"
+                               TextColor="White" />
+                        <Label x:Name="AnnualPrice"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="White" />
+                    </VerticalStackLayout>
+                    <Label x:Name="AnnualCheck"
+                           Grid.Column="1"
+                           Text="✓"
+                           FontSize="18"
+                           TextColor="White"
+                           VerticalOptions="Center"
+                           IsVisible="True" />
+                </Grid>
+            </Border>
+
+        </VerticalStackLayout>
+
+        <!-- Actions -->
+        <VerticalStackLayout Grid.Row="2" Spacing="12">
+            <Button x:Name="SubscribeButton"
+                    Text="SUBSCRIBE"
+                    Clicked="OnSubscribeTapped"
+                    BackgroundColor="White"
+                    TextColor="Black"
+                    FontAttributes="Bold"
+                    CharacterSpacing="3"
+                    FontSize="13"
+                    HeightRequest="52"
+                    CornerRadius="0" />
+
+            <Button Text="RESTORE PURCHASES"
+                    Clicked="OnRestoreTapped"
+                    BackgroundColor="Transparent"
+                    TextColor="#888888"
+                    CharacterSpacing="2"
+                    FontSize="11"
+                    HeightRequest="44"
+                    BorderWidth="0" />
+
+            <Label Text="Subscriptions renew automatically. Cancel any time in Google Play."
+                   FontSize="10"
+                   TextColor="#555555"
+                   HorizontalTextAlignment="Center"
+                   Margin="0,4,0,0" />
+        </VerticalStackLayout>
+
+    </Grid>
+
+</ContentPage>

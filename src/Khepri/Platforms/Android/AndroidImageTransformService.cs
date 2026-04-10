@@ -4,9 +4,9 @@
 using Android.Graphics;
 using Android.Media;
 using Khepri.Domain.Timelapse;
+using AGColor = Android.Graphics.Color;
 using AGMatrix = Android.Graphics.Matrix;
-using AGPaint  = Android.Graphics.Paint;
-using AGColor  = Android.Graphics.Color;
+using AGPaint = Android.Graphics.Paint;
 using IOPath = System.IO.Path;
 
 namespace Khepri.Platforms.Android;
@@ -42,11 +42,11 @@ public sealed class AndroidImageTransformService : IImageTransformService
             using var paint = new AGPaint { FilterBitmap = true };
             canvas.DrawBitmap(src, matrix, paint);
 
-            var dir     = IOPath.GetDirectoryName(sourcePath)!;
-            var stem    = IOPath.GetFileNameWithoutExtension(sourcePath);
+            var dir = IOPath.GetDirectoryName(sourcePath)!;
+            var stem = IOPath.GetFileNameWithoutExtension(sourcePath);
             var outPath = IOPath.Combine(dir, stem + "_aligned.jpg");
 
-            using var stream = System.IO.File.Create(outPath);
+            using var stream = File.Create(outPath);
             outBmp.Compress(Bitmap.CompressFormat.Jpeg!, 92, stream);
 
             outBmp.Recycle();
@@ -63,10 +63,10 @@ public sealed class AndroidImageTransformService : IImageTransformService
         var bmp = BitmapFactory.DecodeFile(path)
             ?? throw new InvalidOperationException($"Cannot decode image: {path}");
 
-        var exif        = new ExifInterface(path);
-        int orientation = exif.GetAttributeInt(ExifInterface.TagOrientation, 1);
+        var exif = new ExifInterface(path);
+        var orientation = exif.GetAttributeInt(ExifInterface.TagOrientation, 1);
 
-        float degrees = orientation switch
+        var degrees = orientation switch
         {
             6 => 90f,
             3 => 180f,

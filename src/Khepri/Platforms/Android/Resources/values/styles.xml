@@ -7,4 +7,13 @@
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
     </style>
+
+    <!-- Show the app icon in the native Android 12+ splash screen circle window. -->
+    <style name="MyTheme.Splash" parent="Maui.MainTheme">
+        <item name="windowNoTitle">true</item>
+        <item name="windowActionBar">false</item>
+        <item name="android:windowSplashScreenBackground">#0A0A0A</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/appicon</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
+    </style>
 </resources>

@@ -4,6 +4,7 @@
              xmlns:local="clr-namespace:Khepri"
              xmlns:vm="clr-namespace:Khepri.Presentation.Timelapse"
              x:Class="Khepri.ProjectDetailPage"
+             x:DataType="vm:ProjectDetailViewModel"
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
 
@@ -13,7 +14,7 @@
         <Grid Grid.Row="0" Padding="20,52,20,12">
 
             <!-- Single header — bin disabled until selection mode -->
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Back / Cancel -->
                 <Button Grid.Column="0"
@@ -100,8 +101,18 @@
                         IsVisible="{Binding IsNotSelecting}"
                         Padding="8,0" />
 
-                <!-- Bin — hidden in selection mode -->
+                <!-- Export -->
                 <ImageButton Grid.Column="5"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             Padding="12"
+                             BackgroundColor="Transparent"
+                             IsVisible="{Binding IsNotSelecting}"
+                             Source="{AppThemeBinding Light=export_dark.svg, Dark=export_light.svg}"
+                             Clicked="OnExportClicked" />
+
+                <!-- Bin - hidden in selection mode -->
+                <ImageButton Grid.Column="6"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
@@ -111,7 +122,7 @@
                              Clicked="OnDeleteSelectedClicked" />
 
                 <!-- OK — visible in selection mode to confirm delete -->
-                <Button Grid.Column="6"
+                <Button Grid.Column="7"
                         Text="OK"
                         FontSize="11"
                         FontAttributes="Bold"
@@ -157,7 +168,7 @@
             </CollectionView.EmptyView>
 
             <CollectionView.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:FrameDisplayItem">
                     <Grid RowDefinitions="Auto,Auto,Auto"
                           Padding="0,0,0,4">
 
@@ -174,7 +185,7 @@
 
                         <!-- Photo -->
                         <Image Grid.Row="0"
-                               Source="{Binding Frame.FilePath}"
+                               Source="{Binding FrameFilePath}"
                                Aspect="AspectFill"
                                HeightRequest="160" />
 
@@ -213,7 +224,7 @@
 
                         <!-- Date -->
                         <Label Grid.Row="2"
-                               Text="{Binding Frame.CapturedAt, StringFormat='{0:d MMM yyyy}'}"
+                               Text="{Binding FrameDisplayDate}"
                                FontSize="10"
                                CharacterSpacing="0.5"
                                TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"

@@ -12,7 +12,7 @@ Developed by **Ion Core Studios**.
 - Retake, reorder (drag & drop), and delete frames
 - Preview timelapse with configurable speed and transition effects
 - Export as MP4 and share or save to disk
-- Swiss minimalist UI
+- Minimalist UI
 
 ## Contributing
 

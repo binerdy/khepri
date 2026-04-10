@@ -76,6 +76,8 @@ New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
     -c Release `
     -o $OutputDir `
     -p:AndroidPackageFormats=aab `
+    -p:DebugType=portable `
+    -p:DebugSymbols=true `
     -p:AndroidKeyStore=true `
     -p:AndroidSigningKeyStore=$KeystorePath `
     -p:AndroidSigningKeyAlias=$KeyAlias `
@@ -96,11 +98,59 @@ $aab = Get-ChildItem -Path $OutputDir -Filter '*.aab' -Recurse |
        Sort-Object LastWriteTime -Descending |
        Select-Object -First 1
 
+# ── 5. Locate R8 mapping file (deobfuscation) ────────────────────────────────
+
+$mappingInOutput = Join-Path $OutputDir 'mapping.txt'
+$mappingInBin    = Join-Path $PSScriptRoot '..\artifacts\bin\Khepri\release_net10.0-android\mapping.txt'
+$mappingInBin    = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($mappingInBin)
+
+if (Test-Path $mappingInOutput) {
+    Write-Ok "R8 mapping: $mappingInOutput"
+} elseif (Test-Path $mappingInBin) {
+    Copy-Item $mappingInBin $mappingInOutput -Force
+    Write-Ok "R8 mapping: $mappingInOutput"
+} else {
+    Write-Host "  [--] R8 mapping not found (R8 may not have run or path changed)" -ForegroundColor Yellow
+}
+
+# ── 6. Copy native debug symbols (.so files) ─────────────────────────────────
+#
+# Google Play rejects Mono/Xamarin runtime internals; exclude them.
+# The zip must preserve ABI folder structure: arm64-v8a/libfoo.so, x86_64/libfoo.so
+
+$symbolsSrc = Join-Path $PSScriptRoot '..\artifacts\obj\Khepri\release_net10.0-android\app_shared_libraries'
+$symbolsSrc = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($symbolsSrc)
+
+$excludedNames = @('libxamarin-app.so', 'libxamarin-app.dbg.so', 'assembly-store.so')
+$soFiles = Get-ChildItem -Path $symbolsSrc -Filter '*.so' -Recurse -ErrorAction SilentlyContinue |
+           Where-Object { $_.Name -notin $excludedNames }
+
+if ($soFiles) {
+    $symbolsZip = Join-Path $OutputDir 'native-symbols.zip'
+    if (Test-Path $symbolsZip) { Remove-Item $symbolsZip -Force }
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [System.IO.Compression.ZipFile]::Open($symbolsZip, 'Create')
+    try {
+        foreach ($file in $soFiles) {
+            # Preserve relative path e.g. arm64-v8a/libfoo.so
+            $entryName = $file.FullName.Substring($symbolsSrc.Length + 1).Replace('\', '/')
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $file.FullName, $entryName) | Out-Null
+        }
+    } finally {
+        $zip.Dispose()
+    }
+
+    Write-Ok "Native symbols: $symbolsZip ($($soFiles.Count) files)"
+} else {
+    Write-Host "  [--] No .so files found for native symbols" -ForegroundColor Yellow
+}
+
 Write-Host ""
 Write-Ok "AAB ready: $($aab.FullName)"
 Write-Host ""
-Write-Host "  Next steps:" -ForegroundColor DarkGray
-Write-Host "    1. Go to play.google.com/console → Khepri → Internal testing" -ForegroundColor DarkGray
-Write-Host "    2. Create release → Upload the AAB above" -ForegroundColor DarkGray
-Write-Host "    3. Save as draft — this activates the app for API access" -ForegroundColor DarkGray
+Write-Host "  Upload to Google Play Console:" -ForegroundColor DarkGray
+Write-Host "    1. AAB:             $($aab.FullName)" -ForegroundColor DarkGray
+Write-Host "    2. Mapping file:    $OutputDir\mapping.txt  (App Bundle explorer → Downloads → Mapping file)" -ForegroundColor DarkGray
+Write-Host "    3. Native symbols:  $OutputDir\native-symbols.zip  (App Bundle explorer → Downloads → Native debug symbols)" -ForegroundColor DarkGray
 Write-Host ""

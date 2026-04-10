@@ -26,7 +26,7 @@ public sealed class MauiCameraService : ICameraService
 
     public async Task<string> CapturePhotoAsync(
         string? overlayImagePath = null,
-        string? destinationDir   = null,
+        string? destinationDir = null,
         CancellationToken cancellationToken = default)
     {
         _tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -36,10 +36,10 @@ public sealed class MauiCameraService : ICameraService
             SetResult(null);
         });
 
-        var page = new Khepri.CameraPage
+        var page = new CameraPage
         {
             OverlayImagePath = overlayImagePath,
-            FramesDir        = destinationDir ?? _storageRoot.RootFolderPath
+            FramesDir = destinationDir ?? _storageRoot.RootFolderPath
         };
         await Shell.Current.Navigation.PushModalAsync(page, animated: false);
 

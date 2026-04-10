@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Khepri.Infrastructure;
 using Khepri.Presentation.Timelapse;
 
 namespace Khepri;
@@ -8,12 +9,21 @@ namespace Khepri;
 public partial class ProjectDetailPage : ContentPage
 {
     private readonly ProjectDetailViewModel _vm;
+    private readonly ISubscriptionService _subscription;
+    private readonly SubscriptionPage _subscriptionPage;
+    private readonly IProjectExportService _export;
     private FrameDisplayItem? _dragSource;
 
-    public ProjectDetailPage(ProjectDetailViewModel vm)
+    public ProjectDetailPage(ProjectDetailViewModel vm,
+                             ISubscriptionService subscription,
+                             SubscriptionPage subscriptionPage,
+                             IProjectExportService export)
     {
         InitializeComponent();
         _vm = vm;
+        _subscription = subscription;
+        _subscriptionPage = subscriptionPage;
+        _export = export;
         BindingContext = vm;
     }
 
@@ -49,8 +59,35 @@ public partial class ProjectDetailPage : ContentPage
     private async void OnPlayClicked(object? sender, EventArgs e)
         => await Shell.Current.GoToAsync($"TimelapsePreview?projectId={_vm.CurrentProjectId}");
 
+    private async void OnExportClicked(object? sender, EventArgs e)
+    {
+        if (_vm.CurrentProjectId == Guid.Empty || _vm.Project is null)
+        {
+            return;
+        }
+        try
+        {
+            await _export.ExportAsync(_vm.CurrentProjectId, _vm.Project.Name);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Export Failed", ex.Message, "OK");
+        }
+    }
+
     private async void OnAlignClicked(object? sender, EventArgs e)
-        => await Shell.Current.GoToAsync($"FrameAlign?projectId={_vm.CurrentProjectId}");
+    {
+        var subscribed = await _subscription.IsSubscribedAsync();
+        if (!subscribed)
+        {
+            await Navigation.PushModalAsync(_subscriptionPage, animated: false);
+            subscribed = await _subscriptionPage.WaitForSubscriptionAsync();
+        }
+        if (subscribed)
+        {
+            await Shell.Current.GoToAsync($"FrameAlign?projectId={_vm.CurrentProjectId}");
+        }
+    }
 
     private void OnExitSelectModeClicked(object? sender, EventArgs e)
         => _vm.ExitSelectModeCommand.Execute(null);

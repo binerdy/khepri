@@ -17,6 +17,6 @@ public interface ICameraService
     /// </summary>
     Task<string> CapturePhotoAsync(
         string? overlayImagePath = null,
-        string? destinationDir   = null,
+        string? destinationDir = null,
         CancellationToken cancellationToken = default);
 }

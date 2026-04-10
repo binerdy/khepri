@@ -11,10 +11,10 @@ namespace Khepri.Platforms.Android;
 [SupportedOSPlatform("android21.0")]
 public sealed class VideoExportService : IVideoExportService
 {
-    private const int Fps         = 30;
-    private const int BitRate     = 4_000_000; // 4 Mbps
+    private const int Fps = 30;
+    private const int BitRate = 4_000_000; // 4 Mbps
     private const int IFrameInterval = 2;
-    private const int MaxWidth    = 1280;
+    private const int MaxWidth = 1280;
     // NV12 / YUV420SemiPlanar — universally supported on Android 21+
     private const int ColorFormatNv12 = 21;
 
@@ -43,8 +43,8 @@ public sealed class VideoExportService : IVideoExportService
         // Determine output dimensions from the first frame (scale to max width, even numbers).
         var sizeOpts = new BitmapFactory.Options { InJustDecodeBounds = true };
         BitmapFactory.DecodeFile(framePaths[0], sizeOpts);
-        var scale  = Math.Min(1.0, (double)MaxWidth / sizeOpts.OutWidth);
-        var width  = (int)(sizeOpts.OutWidth  * scale) & ~1;
+        var scale = Math.Min(1.0, (double)MaxWidth / sizeOpts.OutWidth);
+        var width = (int)(sizeOpts.OutWidth * scale) & ~1;
         var height = (int)(sizeOpts.OutHeight * scale) & ~1;
 
         var outputPath = System.IO.Path.Combine(FileSystem.CacheDirectory, $"timelapse_{Guid.NewGuid():N}.mp4");
@@ -55,7 +55,7 @@ public sealed class VideoExportService : IVideoExportService
         format.SetInteger(MediaFormat.KeyFrameRate, Fps);
         format.SetInteger(MediaFormat.KeyIFrameInterval, IFrameInterval);
 
-        using var codec  = MediaCodec.CreateEncoderByType("video/avc")!;
+        using var codec = MediaCodec.CreateEncoderByType("video/avc")!;
         codec.Configure(format, null, null, MediaCodecConfigFlags.Encode);
         codec.Start();
 
@@ -63,22 +63,22 @@ public sealed class VideoExportService : IVideoExportService
         var bufInfo = new MediaCodec.BufferInfo();
         var videoTrack = -1;
         var muxerStarted = false;
-        long presentationUs = 0L;
+        var presentationUs = 0L;
         var frameDurationUs = (long)(1_000_000.0 / Fps);
 
-        var yuvSize  = width * height * 3 / 2;
-        var yuv      = new byte[yuvSize];
-        var pixCur   = new int[width * height];
-        var pixNext  = new int[width * height];
+        var yuvSize = width * height * 3 / 2;
+        var yuv = new byte[yuvSize];
+        var pixCur = new int[width * height];
+        var pixNext = new int[width * height];
         var pixBlend = new int[width * height];
 
-        var framesPerImage  = Math.Max(1, (int)(secondsPerFrame * Fps));
-        var fadeFrames      = transition == TransitionEffect.Fade
+        var framesPerImage = Math.Max(1, (int)(secondsPerFrame * Fps));
+        var fadeFrames = transition == TransitionEffect.Fade
             ? Math.Min(framesPerImage - 1, (int)(0.4 * secondsPerFrame * Fps))
             : 0;
-        var holdFrames      = framesPerImage - fadeFrames;
+        var holdFrames = framesPerImage - fadeFrames;
         var totalVideoFrames = (long)framePaths.Count * framesPerImage;
-        long encodedCount    = 0;
+        long encodedCount = 0;
 
         // ── helpers ──────────────────────────────────────────────────────────
 
@@ -246,8 +246,8 @@ public sealed class VideoExportService : IVideoExportService
                 var g = (p >> 8) & 0xFF;
                 var b = p & 0xFF;
                 var idx = uvBase + (j / 2) * width + i;
-                yuv[idx]     = (byte)Math.Clamp((-43 * r -  85 * g + 128 * b) / 256 + 128, 0, 255);
-                yuv[idx + 1] = (byte)Math.Clamp((128 * r - 107 * g -  21 * b) / 256 + 128, 0, 255);
+                yuv[idx] = (byte)Math.Clamp((-43 * r - 85 * g + 128 * b) / 256 + 128, 0, 255);
+                yuv[idx + 1] = (byte)Math.Clamp((128 * r - 107 * g - 21 * b) / 256 + 128, 0, 255);
             }
         }
     }
@@ -257,9 +257,9 @@ public sealed class VideoExportService : IVideoExportService
         var inv = 1f - alpha;
         for (var i = 0; i < a.Length; i++)
         {
-            var r     = (int)(((a[i] >> 16) & 0xFF) * inv + ((b[i] >> 16) & 0xFF) * alpha);
-            var g     = (int)(((a[i] >>  8) & 0xFF) * inv + ((b[i] >>  8) & 0xFF) * alpha);
-            var bComp = (int)((a[i]         & 0xFF) * inv +  (b[i]        & 0xFF) * alpha);
+            var r = (int)(((a[i] >> 16) & 0xFF) * inv + ((b[i] >> 16) & 0xFF) * alpha);
+            var g = (int)(((a[i] >> 8) & 0xFF) * inv + ((b[i] >> 8) & 0xFF) * alpha);
+            var bComp = (int)((a[i] & 0xFF) * inv + (b[i] & 0xFF) * alpha);
             result[i] = (0xFF << 24) | (r << 16) | (g << 8) | bComp;
         }
     }
