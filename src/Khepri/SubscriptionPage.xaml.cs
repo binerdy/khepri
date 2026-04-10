@@ -7,8 +7,8 @@ namespace Khepri;
 
 public partial class SubscriptionPage : ContentPage
 {
-    public const string MonthlyId = "khepri_monthly";
-    public const string AnnualId = "khepri_annual";
+    public const string MonthlyId = "khepri-monthly";
+    public const string AnnualId = "khepri-annual";
 
     private readonly ISubscriptionService _billing;
 

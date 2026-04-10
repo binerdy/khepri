@@ -155,7 +155,7 @@ public class BillingSubscriptionService : ISubscriptionService
                 return false;
             }
 
-            // productId here is a base plan ID (e.g. "khepri_monthly" / "khepri_annual").
+            // productId here is a base plan ID (e.g. "khepri-monthly" / "khepri-annual").
             // Match the offer whose BasePlanId equals the requested base plan, falling back
             // to the first available offer if no match is found.
             var offerDetails = details.GetSubscriptionOfferDetails();

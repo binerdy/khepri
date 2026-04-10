@@ -20,12 +20,11 @@
 
 		<!-- Enable XAML source generation for faster build times and improved performance.
 		     This generates C# code from XAML at compile time instead of runtime inflation.
-		     Disabled in Release to avoid known arm64 crash in AAB builds; re-enable once stable.
 		     To disable, remove this line.
 		     For individual files, you can override by setting Inflator metadata:
 		       <MauiXaml Update="MyPage.xaml" Inflator="Default" /> (reverts to defaults: Runtime for Debug, XamlC for Release)
 		       <MauiXaml Update="MyPage.xaml" Inflator="Runtime" /> (force runtime inflation) -->
-		<MauiXamlInflator Condition="'$(Configuration)' != 'Release'">SourceGen</MauiXamlInflator>
+		<MauiXamlInflator>SourceGen</MauiXamlInflator>
 
 		<!-- Display name -->
 		<ApplicationTitle>Khepri</ApplicationTitle>
@@ -34,8 +33,8 @@
 		<ApplicationId>com.binerdy.khepri</ApplicationId>
 
 		<!-- Versions -->
-		<ApplicationDisplayVersion>1.0.9</ApplicationDisplayVersion>
-		<ApplicationVersion>10</ApplicationVersion>
+		<ApplicationDisplayVersion>1.1.1</ApplicationDisplayVersion>
+		<ApplicationVersion>12</ApplicationVersion>
 
 		<!-- To develop, package, and publish an app to the Microsoft Store, see: https://aka.ms/MauiTemplateUnpackaged -->
 		<WindowsPackageType>None</WindowsPackageType>
