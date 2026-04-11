@@ -208,7 +208,11 @@ public partial class ProjectDetailPage : ContentPage
         // Not in selection mode — open full-screen viewer.
         if (sender is Element { BindingContext: FrameDisplayItem frame })
         {
-            var viewer = new FrameViewerPage(frame.FrameFilePath, frame.Label);
+            var frames = _vm.DisplayFrames
+                .Select(f => (f.FrameFilePath, f.Label))
+                .ToList();
+            var index = _vm.DisplayFrames.IndexOf(frame);
+            var viewer = new FrameViewerPage(frames, Math.Max(0, index));
             await Navigation.PushModalAsync(viewer, animated: false);
         }
     }

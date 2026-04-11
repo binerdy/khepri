@@ -101,9 +101,15 @@ Reached from the Capture button in the Project Detail toolbar.
 #### 4. Playback Screen
 Reached from the Play button in the Project Detail toolbar.
 
-- Plays all frames as an in-app animation in chronological order.
-- Controls: play/pause, speed selector (4 fps / 12 fps / 24 fps), scrub bar.
-- Frame indicator (e.g. "12 / 48").
+- Plays all frames as an in-app animation in chronological order using a `DispatcherTimer`.
+- Tapping the frame image advances one frame manually.
+- **Controls** (in a collapsible settings panel):
+  - Speed — slider from 0.1 s to 5.0 s per frame (default 0.5 s).
+  - Transition — picker: Dissolve, None, Fade, Flip (page-turn using `RotationY` animation).
+  - Duration — slider from 0.05 s to 1.0 s controlling transition animation length (default 0.35 s); no effect when Transition = None.
+- Play / Pause button; Stop button resets to frame 0.
+- Frame counter (e.g. “12 / 48”).
+- Export MP4 button with progress indicator.
 - Close/back returns to Project Detail.
 
 #### 5. Share / Export
@@ -113,22 +119,28 @@ Triggered from the Share button in the Project Detail toolbar.
 - On completion: invokes the native share sheet so the user can save to gallery, send via messaging app, etc.
 
 #### 6. Alignment Screen
-Reached from the Align button in the Project Detail toolbar (clone projects only).
+Reached from the Align button in the Project Detail toolbar.
 
-- Lets the user choose an **alignment algorithm** from a list of available options (see below).
-- Shows a **before / after preview** on a sample frame pair before committing.
-- **Run** button: processes all frames in sequence with a progress bar (frame N / total).
-- Results overwrite the clone's frames in-place; the original project is never touched.
-- If the run fails mid-way the already-processed frames are kept and the user can retry.
+Allows manual frame-by-frame alignment using a ghost overlay of the preceding reference frame.
 
-**Alignment algorithms:**
+**Layout (row-based):**
+1. **Header** — back, progress counter (`N / total`), Reset (current frame), Reset All.
+2. **Viewer** — full-screen image area (`IsClippedToBounds`). Shows the frame under alignment at its current offset/rotation/scale. A semi-transparent ghost of the previous frame is rendered on top at adjustable opacity. A crosshair marks the centre reference point.
+3. **Controls bar** — filmstrip (scrolls to active frame), ghost opacity slider, ◀ PREV / NEXT ▶ navigation buttons, ▼ PRECISION toggle.
+4. **Precision panel** (collapsible, below controls) — four rows: Offset X, Offset Y, Rotation, Zoom. Each row has a numeric entry field and − / + step buttons.
 
-| Algorithm | Technique | Notes |
-|---|---|---|
-| **Facial landmark warp** ✓ | Detect face landmarks (eyes, nose, mouth) and apply affine/thin-plate-spline warp to align them across frames | **Confirmed default.** Uses MediaPipe Face Mesh — runs fully on-device, offline, no cloud calls. |
-| Phase correlation | Frequency-domain translation estimation | Fallback if no face is detected in a frame |
-| ORB feature matching | Detect and match ORB keypoints, compute homography | General-purpose fallback for non-face projects |
-| Laplacian sharpness crop | Uses Laplacian variance to detect the sharpest region and centre-crop | Simplest fallback; corrects framing drift only |
+**Gestures (Android, native `IOnTouchListener`):**
+- One finger — pan (TranslationX / Y); clamped so the image centre cannot leave the viewbox.
+- Two fingers — pinch-to-zoom (Scale) + rotate (Rotation) + pan centroid.
+- All fingers up — auto-save triggered.
+
+**Precision panel:**
+- Opens/closes by tapping the PRECISION button (arrow icon toggles ▼ / ▲).
+- Offset X/Y step: ± 1 dp. Rotation step: ± 0.5°. Zoom step: ± 0.01.
+- Entry fields accept direct numeric input; committed on Return or blur.
+- Updates are reflected immediately in the viewer via data binding.
+
+**Saving:** each auto-save writes `OffsetX`, `OffsetY`, `Rotation`, `Scale` to the frame's `project.json` entry. A "✓ SAVED" flash indicator confirms the save.
 
 ### Data Model
 

@@ -2,8 +2,11 @@ Initial release of Khepri — the timelapse camera app.
 
 • Capture timelapse sequences with your camera
 • Ghost overlay for precise frame alignment
-• Review, reorder, and delete frames
-• In-app preview and H.264/MP4 export
+• Manual frame alignment — pan, pinch-to-zoom, and rotate with a ghost reference overlay
+• Precision alignment panel with numeric offset X/Y, rotation and zoom controls
+• Review, reorder (drag & drop), and delete frames
+• Tap a frame to open full-screen viewer; tap again to advance to the next frame
+• In-app timelapse preview with adjustable speed
+• Transition effects: Dissolve, Fade, Flip (page-turn) with configurable duration
+• H.264/MP4 export and share
 • Rename, clone, and organise multiple projects
-• Export / Import projects
-• View and share Frames

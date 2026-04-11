@@ -11,10 +11,10 @@
     <Grid RowDefinitions="Auto,*,Auto" Padding="0">
 
         <!-- ── Header ─────────────────────────────────────────────────────── -->
-        <Grid Grid.Row="0" Padding="20,52,20,12">
+        <Grid Grid.Row="0" Padding="20,52,20,4" RowDefinitions="Auto,Auto">
 
-            <!-- Single header — bin disabled until selection mode -->
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
+            <!-- Row 0: Back / name / edit / delete  (normal) · Cancel / count / OK (selection) -->
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto,Auto">
 
                 <!-- Back / Cancel -->
                 <Button Grid.Column="0"
@@ -68,7 +68,7 @@
                                    HeightRequest="16"
                                    Margin="0,0,4,0" />
 
-                <!-- Edit -->
+                <!-- Edit (normal mode) -->
                 <ImageButton Grid.Column="2"
                              WidthRequest="44"
                              HeightRequest="44"
@@ -78,54 +78,8 @@
                              Source="{AppThemeBinding Light=edit_dark.svg, Dark=edit_light.svg}"
                              Clicked="OnEditClicked" />
 
-                <!-- Play -->
+                <!-- Delete (normal mode) -->
                 <ImageButton Grid.Column="3"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             Padding="11"
-                             BackgroundColor="Transparent"
-                             IsEnabled="{Binding HasFrames}"
-                             IsVisible="{Binding IsNotSelecting}"
-                             Source="{AppThemeBinding Light=play_dark.svg, Dark=play_light.svg}"
-                             Clicked="OnPlayClicked" />
-
-                <!-- Align -->
-                <Button Grid.Column="4"
-                        Text="ALIGN"
-                        FontSize="11"
-                        CharacterSpacing="1"
-                        Clicked="OnAlignClicked"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                        IsEnabled="{Binding HasFrames}"
-                        IsVisible="{Binding IsNotSelecting}"
-                        Padding="8,0" />
-
-                <!-- Share frames -->
-                <Button Grid.Column="5"
-                        Text="SHARE"
-                        FontSize="11"
-                        CharacterSpacing="1"
-                        Padding="12"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                        IsEnabled="{Binding HasFrames}"
-                        IsVisible="{Binding IsNotSelecting}"
-                        Clicked="OnShareFramesClicked" />
-
-                <!-- Import from gallery -->
-                <Button Grid.Column="6"
-                        Text="IMPORT"
-                        FontSize="11"
-                        CharacterSpacing="1"
-                        Padding="12"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                        IsVisible="{Binding IsNotSelecting}"
-                        Clicked="OnImportFromGalleryClicked" />
-
-                <!-- Bin - hidden in selection mode -->
-                <ImageButton Grid.Column="7"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
@@ -134,8 +88,8 @@
                              Source="{AppThemeBinding Light=bin_dark.svg, Dark=bin_light.svg}"
                              Clicked="OnDeleteSelectedClicked" />
 
-                <!-- OK — visible in selection mode to confirm delete/share -->
-                <Button Grid.Column="8"
+                <!-- OK (selection mode confirm) -->
+                <Button Grid.Column="4"
                         Text="OK"
                         FontSize="11"
                         FontAttributes="Bold"
@@ -146,6 +100,56 @@
                         IsVisible="{Binding IsSelecting}"
                         Padding="8,0"
                         MinimumWidthRequest="40" />
+
+            </Grid>
+
+            <!-- Row 1: action buttons (normal mode only) -->
+            <Grid Grid.Row="1"
+                  ColumnDefinitions="Auto,Auto,Auto,Auto"
+                  Padding="0,4,0,4"
+                  IsVisible="{Binding IsNotSelecting}">
+
+                <!-- Play -->
+                <ImageButton Grid.Column="0"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             Padding="11"
+                             BackgroundColor="Transparent"
+                             IsEnabled="{Binding HasFrames}"
+                             Source="{AppThemeBinding Light=play_dark.svg, Dark=play_light.svg}"
+                             Clicked="OnPlayClicked" />
+
+                <!-- Align -->
+                <Button Grid.Column="1"
+                        Text="ALIGN"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Clicked="OnAlignClicked"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        IsEnabled="{Binding HasFrames}"
+                        Padding="8,0" />
+
+                <!-- Share -->
+                <Button Grid.Column="2"
+                        Text="SHARE"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Padding="8,0"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        IsEnabled="{Binding HasFrames}"
+                        Clicked="OnShareFramesClicked" />
+
+                <!-- Import -->
+                <Button Grid.Column="3"
+                        Text="IMPORT"
+                        FontSize="11"
+                        CharacterSpacing="1"
+                        Padding="8,0"
+                        BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                        Clicked="OnImportFromGalleryClicked" />
 
             </Grid>
 

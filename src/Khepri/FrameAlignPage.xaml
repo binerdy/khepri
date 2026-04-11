@@ -65,6 +65,7 @@
         <!-- ── Ghost viewer ──────────────────────────────────────────────── -->
         <Grid Grid.Row="1"
               BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#1A1A1A}"
+              IsClippedToBounds="True"
               x:Name="ViewerGrid">
 
             <!-- Bottom: frame being repositioned — opaque, draggable -->

@@ -85,15 +85,15 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
 
                     _vm.Scale = _baseScale * (dist / _baseInitDist);
                     _vm.Rotation = _baseRotation + (angle - _baseInitAngle) * (180.0 / Math.PI);
-                    _vm.OffsetX = _baseOffsetX + (midX - _baseInitMidX) / density;
-                    _vm.OffsetY = _baseOffsetY + (midY - _baseInitMidY) / density;
+                    _vm.OffsetX = ClampOffset(_baseOffsetX + (midX - _baseInitMidX) / density, v?.Width / density ?? 0);
+                    _vm.OffsetY = ClampOffset(_baseOffsetY + (midY - _baseInitMidY) / density, v?.Height / density ?? 0);
                 }
                 else if (!_twoFingerActive && e.PointerCount == 1)
                 {
                     var dx = e.GetX(0) - _panPrevX;
                     var dy = e.GetY(0) - _panPrevY;
-                    _vm.OffsetX += dx / density;
-                    _vm.OffsetY += dy / density;
+                    _vm.OffsetX = ClampOffset(_vm.OffsetX + dx / density, v?.Width / density ?? 0);
+                    _vm.OffsetY = ClampOffset(_vm.OffsetY + dy / density, v?.Height / density ?? 0);
                     _panPrevX = e.GetX(0);
                     _panPrevY = e.GetY(0);
                 }
@@ -125,4 +125,15 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
 
     private static float AngleRad(float x1, float y1, float x2, float y2)
         => MathF.Atan2(y2 - y1, x2 - x1);
+
+    /// <summary>
+    /// Clamps an offset so the image centre stays inside the viewbox.
+    /// <paramref name="viewSizeDp"/> is the width (for X) or height (for Y) of the
+    /// ViewerGrid in density-independent pixels.
+    /// </summary>
+    private static double ClampOffset(double offset, double viewSizeDp)
+    {
+        var limit = viewSizeDp * 0.5;
+        return Math.Clamp(offset, -limit, limit);
+    }
 }

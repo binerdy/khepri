@@ -158,6 +158,32 @@
                         BackgroundColor="{AppThemeBinding Light=#F2F2F2, Dark=#1E1E1E}"
                         FontSize="11" />
 
+                <!-- Transition duration -->
+                <Label Text="DURATION"
+                       FontSize="9"
+                       FontAttributes="Bold"
+                       CharacterSpacing="2"
+                       TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
+                       Margin="0,12,0,4" />
+
+                <Grid ColumnDefinitions="*,Auto">
+                    <Slider Grid.Column="0"
+                            Minimum="0.05" Maximum="1.0"
+                            Value="{Binding TransitionDuration}"
+                            ThumbColor="{AppThemeBinding Light=Black, Dark=White}"
+                            MinimumTrackColor="{AppThemeBinding Light=Black, Dark=White}"
+                            MaximumTrackColor="{AppThemeBinding Light=#DDDDDD, Dark=#333333}" />
+
+                    <Label Grid.Column="1"
+                           Text="{Binding TransitionDuration, StringFormat='{0:F2}s'}"
+                           FontSize="11"
+                           FontAttributes="Bold"
+                           VerticalOptions="Center"
+                           TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                           MinimumWidthRequest="42"
+                           HorizontalTextAlignment="End" />
+                </Grid>
+
                 <!-- Separator before export -->
                 <BoxView HeightRequest="1"
                          BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#222222}"

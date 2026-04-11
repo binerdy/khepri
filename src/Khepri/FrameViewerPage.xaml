@@ -37,7 +37,11 @@
                x:Name="FrameImage"
                Aspect="AspectFit"
                HorizontalOptions="Fill"
-               VerticalOptions="Fill" />
+               VerticalOptions="Fill">
+            <Image.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnImageTapped" />
+            </Image.GestureRecognizers>
+        </Image>
 
 
     </Grid>

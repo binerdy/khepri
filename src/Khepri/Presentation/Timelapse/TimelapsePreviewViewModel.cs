@@ -71,6 +71,10 @@ public sealed partial class TimelapsePreviewViewModel(
 
     public string SettingsToggleText => ShowSettings ? "▲ SETTINGS" : "▼ SETTINGS";
 
+    /// <summary>Transition duration in seconds (0.05 – 1.0). Does not apply to Transition = None.</summary>
+    [ObservableProperty]
+    public partial double TransitionDuration { get; set; } = 0.35;
+
     public bool IsNotPlaying => !IsPlaying;
     public bool IsNotExporting => !IsExporting;
 

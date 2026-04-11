@@ -107,9 +107,10 @@ public partial class TimelapsePreviewPage : ContentPage
                         // Yield so MAUI bindings update FrameImage to the new frame.
                         await Task.Yield();
 
+                        var dissolveDuration = (uint)(_vm.TransitionDuration * 1000);
                         await Task.WhenAll(
-                            FrameImageOverlay.FadeToAsync(0, 350),
-                            FrameImage.FadeToAsync(1, 350));
+                            FrameImageOverlay.FadeToAsync(0, dissolveDuration),
+                            FrameImage.FadeToAsync(1, dissolveDuration));
 
                         FrameImageOverlay.IsVisible = false;
                     }
@@ -126,17 +127,52 @@ public partial class TimelapsePreviewPage : ContentPage
 
             case 2: // Fade-in — new frame materialises from black
                 FrameImage.Opacity = 0;
-                await FrameImage.FadeToAsync(1, 250, Easing.CubicIn);
+                await FrameImage.FadeToAsync(1, (uint)(_vm.TransitionDuration * 1000), Easing.CubicIn);
                 break;
 
-            case 3: // Flip — quick page-riffle snap
-                await Task.WhenAll(
-                    FrameImage.ScaleToAsync(0.96, 50, Easing.CubicIn),
-                    FrameImage.FadeToAsync(0.5, 50));
-                await Task.WhenAll(
-                    FrameImage.ScaleToAsync(1.0, 50, Easing.CubicOut),
-                    FrameImage.FadeToAsync(1.0, 50));
-                break;
+            case 3: // Flip — page turns away revealing the next frame beneath
+                {
+                    var oldPathF = _displayedPath;
+                    var oldOffsetXF = _displayedOffsetX;
+                    var oldOffsetYF = _displayedOffsetY;
+                    var oldRotationF = _displayedRotation;
+                    var oldScaleF = _displayedScale;
+
+                    var half = (uint)Math.Max(30, _vm.TransitionDuration * 500);
+
+                    if (oldPathF != null && oldPathF != _vm.CurrentFramePath)
+                    {
+                        // Pin old frame on top; new frame sits underneath (updated by binding after Yield).
+                        FrameImageOverlay.Source = ImageSource.FromFile(oldPathF);
+                        FrameImageOverlay.TranslationX = oldOffsetXF;
+                        FrameImageOverlay.TranslationY = oldOffsetYF;
+                        FrameImageOverlay.Rotation = oldRotationF;
+                        FrameImageOverlay.Scale = oldScaleF;
+                        FrameImageOverlay.RotationY = 0;
+                        FrameImageOverlay.Opacity = 1;
+                        FrameImageOverlay.IsVisible = true;
+
+                        // New frame starts edge-on (invisible) until the old page has gone.
+                        FrameImage.RotationY = -90;
+                        FrameImage.Opacity = 1;
+
+                        await Task.Yield(); // let bindings update FrameImage to the new path
+
+                        // Phase 1: old page rotates away (0° → 90° = edge-on = invisible).
+                        await FrameImageOverlay.RotateYToAsync(90, half, Easing.CubicIn);
+                        FrameImageOverlay.IsVisible = false;
+                        FrameImageOverlay.RotationY = 0; // reset for next use
+
+                        // Phase 2: new page swings in (-90° → 0° = facing viewer).
+                        await FrameImage.RotateYToAsync(0, half, Easing.CubicOut);
+                    }
+                    else
+                    {
+                        FrameImage.RotationY = 0;
+                        FrameImage.Opacity = 1;
+                    }
+                    break;
+                }
         }
     }
 
