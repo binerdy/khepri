@@ -70,8 +70,8 @@
                 <!-- Import icon — hidden in selection mode -->
                 <Button Grid.Column="3"
                         Text="IMPORT"
-                        WidthRequest="44"
-                        HeightRequest="44"
+                        FontSize="11"
+                        CharacterSpacing="1"
                         Padding="12"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
@@ -81,8 +81,8 @@
                 <!-- Export icon — hidden in selection mode -->
                 <Button Grid.Column="4"
                         Text="EXPORT"
-                        WidthRequest="44"
-                        HeightRequest="44"
+                        FontSize="11"
+                        CharacterSpacing="1"
                         Padding="12"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"

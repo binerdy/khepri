@@ -26,7 +26,11 @@ public static class MauiProgram
 
 #if ANDROID
         builder.Services.AddSingleton<IStorageRootService, Platforms.Android.AndroidStorageRootService>();
+#if DEBUG
+        builder.Services.AddSingleton<ISubscriptionService, StubSubscriptionService>();
+#else
         builder.Services.AddSingleton<ISubscriptionService, Platforms.Android.BillingSubscriptionService>();
+#endif
         builder.Services.AddSingleton<IProjectExportService, Platforms.Android.AndroidProjectExportService>();
 #else
         builder.Services.AddSingleton<IStorageRootService, DefaultStorageRootService>();

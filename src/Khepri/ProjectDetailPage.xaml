@@ -104,8 +104,8 @@
                 <!-- Share frames -->
                 <Button Grid.Column="5"
                         Text="SHARE"
-                        WidthRequest="44"
-                        HeightRequest="44"
+                        FontSize="11"
+                        CharacterSpacing="1"
                         Padding="12"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
@@ -116,8 +116,8 @@
                 <!-- Import from gallery -->
                 <Button Grid.Column="6"
                         Text="IMPORT"
-                        WidthRequest="44"
-                        HeightRequest="44"
+                        FontSize="11"
+                        CharacterSpacing="1"
                         Padding="12"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
