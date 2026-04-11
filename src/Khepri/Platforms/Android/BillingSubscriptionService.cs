@@ -4,6 +4,7 @@
 using Android.BillingClient.Api;
 using Khepri.Infrastructure;
 using AndroidBillingResult = Android.BillingClient.Api.BillingResult;
+using AndroidLog = Android.Util.Log;
 
 namespace Khepri.Platforms.Android;
 
@@ -47,6 +48,18 @@ public class BillingSubscriptionService : ISubscriptionService
 
     internal void OnConnected(bool success) => _connectTcs?.TrySetResult(success);
     internal void OnPurchaseResult(bool success) => _purchaseTcs?.TrySetResult(success);
+
+    internal async void AcknowledgeAsync(AcknowledgePurchaseParams ackParams)
+    {
+        try
+        {
+            if (_client?.IsReady == true)
+            {
+                await _client.AcknowledgePurchaseAsync(ackParams);
+            }
+        }
+        catch { /* best-effort */ }
+    }
 
     public async Task<bool> IsSubscribedAsync()
     {
@@ -126,10 +139,12 @@ public class BillingSubscriptionService : ISubscriptionService
 
     public async Task<bool> PurchaseAsync(string productId)
     {
+        string? failReason = null;
         try
         {
             if (!await EnsureConnectedAsync())
             {
+                failReason = "Billing client could not connect.";
                 return false;
             }
 
@@ -146,30 +161,35 @@ public class BillingSubscriptionService : ISubscriptionService
             var productResult = await _client!.QueryProductDetailsAsync(queryParams);
             if (productResult.Result.ResponseCode != BillingResponseCode.Ok)
             {
+                failReason = $"QueryProductDetails failed: {productResult.Result.ResponseCode} — {productResult.Result.DebugMessage}";
                 return false;
             }
 
             var details = productResult.ProductDetails.FirstOrDefault();
             if (details == null)
             {
+                failReason = $"Product '{SubscriptionId}' not found in query result.";
                 return false;
             }
 
             // productId here is a base plan ID (e.g. "khepri-monthly" / "khepri-annual").
-            // Match the offer whose BasePlanId equals the requested base plan, falling back
-            // to the first available offer if no match is found.
+            // Prefer the base plan offer (OfferId == null) so we don't accidentally use
+            // the free-trial token when the user intends a direct subscription.
             var offerDetails = details.GetSubscriptionOfferDetails();
-            var matchedOffer = offerDetails?.FirstOrDefault(o => o.BasePlanId == productId)
+            var matchedOffer = offerDetails?.FirstOrDefault(o => o.BasePlanId == productId && o.OfferId == null)
+                            ?? offerDetails?.FirstOrDefault(o => o.BasePlanId == productId)
                             ?? offerDetails?.FirstOrDefault();
             var offerToken = matchedOffer?.OfferToken;
 
-            var productDetailsParamsBuilder = BillingFlowParams.ProductDetailsParams.NewBuilder()
-                .SetProductDetails(details);
-
-            if (offerToken != null)
+            if (offerToken == null)
             {
-                productDetailsParamsBuilder.SetOfferToken(offerToken);
+                failReason = $"No offer token found for base plan '{productId}'. Available offers: {string.Join(", ", offerDetails?.Select(o => $"{o.BasePlanId}/{o.OfferId}") ?? [])}";
+                return false;
             }
+
+            var productDetailsParamsBuilder = BillingFlowParams.ProductDetailsParams.NewBuilder()
+                .SetProductDetails(details)
+                .SetOfferToken(offerToken);
 
             var flowParams = BillingFlowParams.NewBuilder()
                 .SetProductDetailsParamsList([productDetailsParamsBuilder.Build()])
@@ -178,16 +198,32 @@ public class BillingSubscriptionService : ISubscriptionService
             var activity = Platform.CurrentActivity;
             if (activity == null)
             {
+                failReason = "No current activity.";
                 return false;
             }
 
             _purchaseTcs = new TaskCompletionSource<bool>();
-            _client.LaunchBillingFlow(activity, flowParams);
+            var launchResult = _client.LaunchBillingFlow(activity, flowParams);
+            if (launchResult.ResponseCode != BillingResponseCode.Ok)
+            {
+                failReason = $"LaunchBillingFlow failed: {launchResult.ResponseCode} — {launchResult.DebugMessage}";
+                _purchaseTcs = null;
+                return false;
+            }
+
             return await _purchaseTcs.Task;
         }
-        catch
+        catch (Exception ex)
         {
+            failReason = ex.ToString();
             return false;
+        }
+        finally
+        {
+            if (failReason != null)
+            {
+                AndroidLog.Error("Khepri.Billing", failReason);
+            }
         }
     }
 
@@ -215,8 +251,31 @@ internal sealed class PurchaseListener : Java.Lang.Object, IPurchasesUpdatedList
 
     public void OnPurchasesUpdated(AndroidBillingResult result, IList<Purchase>? purchases)
     {
-        var success = result.ResponseCode == BillingResponseCode.Ok &&
-                        purchases?.Any(p => p.PurchaseState == PurchaseState.Purchased) == true;
-        _service.OnPurchaseResult(success);
+        if (result.ResponseCode != BillingResponseCode.Ok)
+        {
+            _service.OnPurchaseResult(false);
+            return;
+        }
+
+        var purchase = purchases?.FirstOrDefault(p =>
+            p.PurchaseState == PurchaseState.Purchased ||
+            p.PurchaseState == PurchaseState.Pending);
+
+        if (purchase == null)
+        {
+            _service.OnPurchaseResult(false);
+            return;
+        }
+
+        // Acknowledge the purchase so Google doesn't auto-refund it after 3 days.
+        if (purchase.PurchaseState == PurchaseState.Purchased && !purchase.IsAcknowledged)
+        {
+            var ackParams = AcknowledgePurchaseParams.NewBuilder()
+                .SetPurchaseToken(purchase.PurchaseToken)
+                .Build();
+            _service.AcknowledgeAsync(ackParams);
+        }
+
+        _service.OnPurchaseResult(true);
     }
 }
