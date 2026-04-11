@@ -165,6 +165,24 @@ public sealed partial class ProjectDetailViewModel(TimelapseService timelapseSer
         }
     }
 
+    public async Task ImportFromGalleryAsync(IEnumerable<string> filePaths, CancellationToken cancellationToken = default)
+    {
+        IsBusy = true;
+        try
+        {
+            foreach (var path in filePaths)
+            {
+                await timelapseService.AddFrameFromFileAsync(_projectId, path, cancellationToken);
+            }
+
+            await LoadAsync(cancellationToken);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
     private async Task RetakeAsync(CancellationToken cancellationToken)
     {
         IsBusy = true;

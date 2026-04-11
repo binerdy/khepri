@@ -17,20 +17,4 @@ public partial class FrameViewerPage : ContentPage
 
     private async void OnCloseClicked(object? sender, EventArgs e)
         => await Navigation.PopModalAsync(animated: false);
-
-    private async void OnShareClicked(object? sender, EventArgs e)
-    {
-        try
-        {
-            await Share.RequestAsync(new ShareFileRequest
-            {
-                Title = "Share Frame",
-                File = new ShareFile(_filePath)
-            });
-        }
-        catch (Exception ex)
-        {
-            await DisplayAlertAsync("Share Failed", ex.Message, "OK");
-        }
-    }
 }

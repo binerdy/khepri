@@ -14,7 +14,7 @@
         <Grid Grid.Row="0" Padding="20,52,20,12">
 
             <!-- Single header — bin disabled until selection mode -->
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- Back / Cancel -->
                 <Button Grid.Column="0"
@@ -101,18 +101,29 @@
                         IsVisible="{Binding IsNotSelecting}"
                         Padding="8,0" />
 
-                <!-- Export -->
+                <!-- Share frames -->
                 <ImageButton Grid.Column="5"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
                              BackgroundColor="Transparent"
+                             IsEnabled="{Binding HasFrames}"
                              IsVisible="{Binding IsNotSelecting}"
                              Source="{AppThemeBinding Light=export_dark.svg, Dark=export_light.svg}"
-                             Clicked="OnExportClicked" />
+                             Clicked="OnShareFramesClicked" />
+
+                <!-- Import from gallery -->
+                <ImageButton Grid.Column="6"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             Padding="12"
+                             BackgroundColor="Transparent"
+                             IsVisible="{Binding IsNotSelecting}"
+                             Source="{AppThemeBinding Light=import_dark.svg, Dark=import_light.svg}"
+                             Clicked="OnImportFromGalleryClicked" />
 
                 <!-- Bin - hidden in selection mode -->
-                <ImageButton Grid.Column="6"
+                <ImageButton Grid.Column="7"
                              WidthRequest="44"
                              HeightRequest="44"
                              Padding="12"
@@ -121,8 +132,8 @@
                              Source="{AppThemeBinding Light=bin_dark.svg, Dark=bin_light.svg}"
                              Clicked="OnDeleteSelectedClicked" />
 
-                <!-- OK — visible in selection mode to confirm delete -->
-                <Button Grid.Column="7"
+                <!-- OK — visible in selection mode to confirm delete/share -->
+                <Button Grid.Column="8"
                         Text="OK"
                         FontSize="11"
                         FontAttributes="Bold"
@@ -236,7 +247,7 @@
 
         <!-- ── Footer actions ─────────────────────────────────────────────── -->
         <Grid Grid.Row="2"
-              ColumnDefinitions="*,*"
+              ColumnDefinitions="*,*,*"
               ColumnSpacing="12"
               Padding="20,16,20,36"
               IsVisible="{Binding IsNotSelecting}">
@@ -252,6 +263,17 @@
                     CornerRadius="0" />
 
             <Button Grid.Column="1"
+                    Text="IMPORT"
+                    FontSize="11"
+                    CharacterSpacing="1"
+                    Clicked="OnImportFromGalleryClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
+                    BorderColor="{AppThemeBinding Light=Black, Dark=White}"
+                    BorderWidth="1"
+                    CornerRadius="0" />
+
+            <Button Grid.Column="2"
                     Text="RETAKE LAST"
                     FontSize="11"
                     CharacterSpacing="1"

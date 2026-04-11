@@ -46,6 +46,23 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
         return frame;
     }
 
+    /// <summary>Copies <paramref name="srcPath"/> into the project folder and registers it as a new frame.</summary>
+    public async Task<TimelapseFrame> AddFrameFromFileAsync(Guid projectId, string srcPath, CancellationToken cancellationToken = default)
+    {
+        var project = await repository.GetByIdAsync(projectId, cancellationToken)
+            ?? throw new InvalidOperationException($"Project {projectId} not found.");
+
+        var destDir = repository.GetProjectFolderPath(projectId);
+        Directory.CreateDirectory(destDir);
+        var destPath = Path.Combine(destDir, $"{Guid.NewGuid()}{Path.GetExtension(srcPath)}");
+        await Task.Run(() => File.Copy(srcPath, destPath, overwrite: false), cancellationToken);
+
+        var frame = new TimelapseFrame(Guid.NewGuid(), project.Frames.Count, DateTimeOffset.UtcNow, destPath);
+        project.AddFrame(frame);
+        await repository.SaveAsync(project, cancellationToken);
+        return frame;
+    }
+
     public async Task<TimelapseFrame> RetakeLastFrameAsync(Guid projectId, CancellationToken cancellationToken = default)
     {
         var project = await repository.GetByIdAsync(projectId, cancellationToken)
