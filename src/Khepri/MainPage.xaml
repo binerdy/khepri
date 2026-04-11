@@ -74,6 +74,7 @@
                         HeightRequest="44"
                         Padding="12"
                         BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
                         IsVisible="{Binding IsNotSelecting}"
                         Clicked="OnImportClicked" />
 
@@ -84,6 +85,7 @@
                         HeightRequest="44"
                         Padding="12"
                         BackgroundColor="Transparent"
+                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
                         IsVisible="{Binding IsNotSelecting}"
                         Clicked="OnExportClicked" />
 
