@@ -2,22 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using Khepri.Application.Timelapse;
+using Khepri.Infrastructure;
 
 namespace Khepri;
 
 public partial class MainPage : ContentPage
 {
-    private enum PendingAction { None, Delete, Clone }
+    private enum PendingAction { None, Delete, Clone, Export }
 
     private readonly ProjectListViewModel _vm;
     private readonly IProjectImportService _import;
+    private readonly IProjectExportService _export;
     private PendingAction _pending;
 
-    public MainPage(ProjectListViewModel vm, IProjectImportService import)
+    public MainPage(ProjectListViewModel vm, IProjectImportService import, IProjectExportService export)
     {
         InitializeComponent();
         _vm = vm;
         _import = import;
+        _export = export;
         BindingContext = vm;
     }
 
@@ -79,15 +82,18 @@ public partial class MainPage : ContentPage
     {
         try
         {
-            var name = await _import.ImportAsync(stream);
-            if (name is null)
+            var names = await _import.ImportProjectsAsync(stream);
+            if (names.Count == 0)
             {
                 await DisplayAlertAsync("Import Failed",
-                    "The file does not appear to be a valid Khepri project.", "OK");
+                    "The file does not appear to contain valid Khepri projects.", "OK");
                 return;
             }
             await _vm.LoadCommand.ExecuteAsync(null);
-            await DisplayAlertAsync("Imported", $"\"{name}\" was imported successfully.", "OK");
+            var message = names.Count == 1
+                ? $"\u201c{names[0]}\u201d was imported successfully."
+                : $"{names.Count} projects imported successfully.";
+            await DisplayAlertAsync("Imported", message, "OK");
         }
         catch (Exception ex)
         {
@@ -126,6 +132,12 @@ public partial class MainPage : ContentPage
         }
     }
 
+    private void OnExportClicked(object? sender, EventArgs e)
+    {
+        _pending = PendingAction.Export;
+        _vm.EnterSelectModeCommand.Execute(null);
+    }
+
     private void OnDeleteSelectedClicked(object? sender, EventArgs e)
     {
         _pending = PendingAction.Delete;
@@ -153,6 +165,9 @@ public partial class MainPage : ContentPage
                 break;
             case PendingAction.Clone:
                 await ConfirmCloneAsync();
+                break;
+            case PendingAction.Export:
+                await ConfirmExportAsync();
                 break;
         }
     }
@@ -206,6 +221,30 @@ public partial class MainPage : ContentPage
         if (!string.IsNullOrWhiteSpace(newName))
         {
             await _vm.CloneAsync(source.Project.Id, newName);
+        }
+    }
+
+    private async Task ConfirmExportAsync()
+    {
+        var selected = _vm.Projects.Where(p => p.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            return;
+        }
+
+        _pending = PendingAction.None;
+        _vm.ExitSelectModeCommand.Execute(null);
+
+        try
+        {
+            var projects = selected
+                .Select(p => (p.Project.Id, p.Project.Name))
+                .ToList();
+            await _export.ExportAsync(projects);
+        }
+        catch (Exception ex)
+        {
+            await DisplayAlertAsync("Export Failed", ex.Message, "OK");
         }
     }
 }

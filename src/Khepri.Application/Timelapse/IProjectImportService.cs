@@ -4,10 +4,11 @@
 namespace Khepri.Application.Timelapse;
 
 /// <summary>
-/// Reads a .khepri zip file and extracts it into the app's project storage root.
-/// Returns the name of the imported project, or null if the zip is invalid.
+/// Reads a .khepri zip file and extracts all contained projects into the app's storage root.
+/// Supports both single-project (legacy) and multi-project zip formats.
+/// Returns the names of imported projects, or an empty list if the zip is invalid.
 /// </summary>
 public interface IProjectImportService
 {
-    Task<string?> ImportAsync(Stream zipStream);
+    Task<IReadOnlyList<string>> ImportProjectsAsync(Stream zipStream);
 }

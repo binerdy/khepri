@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Khepri.FrameViewerPage"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="Black">
+
+    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+
+        <!-- ── Header ─────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="0"
+              Padding="20,52,20,12"
+              ColumnDefinitions="Auto,*,Auto">
+
+            <Button Grid.Column="0"
+                    Text="✕"
+                    FontSize="18"
+                    Clicked="OnCloseClicked"
+                    BackgroundColor="Transparent"
+                    TextColor="#AAAAAA"
+                    MinimumWidthRequest="44"
+                    Padding="0" />
+
+            <Label Grid.Column="1"
+                   x:Name="FrameLabel"
+                   FontSize="11"
+                   FontAttributes="Bold"
+                   CharacterSpacing="2"
+                   VerticalOptions="Center"
+                   HorizontalOptions="Center"
+                   TextColor="#AAAAAA" />
+
+        </Grid>
+
+        <!-- ── Full-screen image ──────────────────────────────────────────── -->
+        <Image Grid.Row="1"
+               x:Name="FrameImage"
+               Aspect="AspectFit"
+               HorizontalOptions="Fill"
+               VerticalOptions="Fill" />
+
+        <!-- ── Footer ─────────────────────────────────────────────────────── -->
+        <Grid Grid.Row="2" Padding="20,16,20,48">
+            <Button Text="SHARE"
+                    FontSize="11"
+                    FontAttributes="Bold"
+                    CharacterSpacing="2"
+                    Clicked="OnShareClicked"
+                    BackgroundColor="White"
+                    TextColor="Black"
+                    CornerRadius="0" />
+        </Grid>
+
+    </Grid>
+
+</ContentPage>

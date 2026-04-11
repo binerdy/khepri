@@ -14,22 +14,20 @@ public sealed class DefaultProjectExportService : IProjectExportService
     public DefaultProjectExportService(JsonTimelapseRepository repository)
         => _repository = repository;
 
-    public async Task ExportAsync(Guid projectId, string projectName)
+    public async Task ExportAsync(IReadOnlyList<(Guid Id, string Name)> projects)
     {
-        var projectFolder = _repository.GetProjectFolderPath(projectId);
-        if (!Directory.Exists(projectFolder))
+        if (projects.Count == 0)
         {
-            throw new DirectoryNotFoundException($"Project folder not found: {projectFolder}");
+            return;
         }
 
-        var cacheDir = FileSystem.CacheDirectory;
-        var exportsDir = Path.Combine(cacheDir, "exports");
+        var exportsDir = Path.Combine(FileSystem.CacheDirectory, "exports");
         Directory.CreateDirectory(exportsDir);
 
-        var safeName = string.Concat(projectName
-            .Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ')
-            ).Trim().Replace(' ', '_');
-        var zipPath = Path.Combine(exportsDir, $"{safeName}.khepri");
+        var zipFileName = projects.Count == 1
+            ? Sanitize(projects[0].Name) + ".khepri"
+            : $"khepri_{projects.Count}_projects.khepri";
+        var zipPath = Path.Combine(exportsDir, zipFileName);
 
         await Task.Run(() =>
         {
@@ -37,14 +35,36 @@ public sealed class DefaultProjectExportService : IProjectExportService
             {
                 File.Delete(zipPath);
             }
-            ZipFile.CreateFromDirectory(projectFolder, zipPath,
-                CompressionLevel.Fastest, includeBaseDirectory: false);
+
+            using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+            foreach (var (id, _) in projects)
+            {
+                var folder = _repository.GetProjectFolderPath(id);
+                if (!Directory.Exists(folder))
+                {
+                    continue;
+                }
+
+                foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                {
+                    var relPath = Path.GetRelativePath(folder, file).Replace('\\', '/');
+                    zip.CreateEntryFromFile(file, $"{id}/{relPath}", CompressionLevel.Fastest);
+                }
+            }
         });
+
+        var title = projects.Count == 1
+            ? $"Export \u201c{projects[0].Name}\u201d"
+            : $"Export {projects.Count} projects";
 
         await Share.RequestAsync(new ShareFileRequest
         {
-            Title = $"Export \u201c{projectName}\u201d",
+            Title = title,
             File = new ShareFile(zipPath, "application/octet-stream")
         });
     }
+
+    private static string Sanitize(string name)
+        => string.Concat(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' '))
+               .Trim().Replace(' ', '_');
 }

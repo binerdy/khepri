@@ -15,49 +15,79 @@ public sealed class AndroidProjectExportService : IProjectExportService
     public AndroidProjectExportService(JsonTimelapseRepository repository)
         => _repository = repository;
 
-    public async Task ExportAsync(Guid projectId, string projectName)
+    public async Task ExportAsync(IReadOnlyList<(Guid Id, string Name)> projects)
     {
+        if (projects.Count == 0)
+        {
+            return;
+        }
+
         var activity = Platform.CurrentActivity
             ?? throw new InvalidOperationException("No current Activity.");
 
-        var projectFolder = _repository.GetProjectFolderPath(projectId);
-        if (!Directory.Exists(projectFolder))
-        {
-            throw new DirectoryNotFoundException($"Project folder not found: {projectFolder}");
-        }
+        var zipPath = await BuildZipAsync(projects, activity.CacheDir!.AbsolutePath);
 
-        // Write the zip to the cache sub-directory declared in file_paths.xml
-        var exportsDir = Path.Combine(Platform.CurrentActivity!.CacheDir!.AbsolutePath, "exports");
+        var fileUri = AndroidX.Core.Content.FileProvider.GetUriForFile(
+            activity,
+            activity.PackageName + ".fileprovider",
+            new Java.IO.File(zipPath));
+
+        var title = projects.Count == 1
+            ? $"Export \u201c{projects[0].Name}\u201d"
+            : $"Export {projects.Count} projects";
+
+        var shareIntent = new Intent(Intent.ActionSend);
+        shareIntent.SetType("application/octet-stream");
+        shareIntent.PutExtra(Intent.ExtraStream, fileUri);
+        shareIntent.PutExtra(Intent.ExtraSubject, title);
+        shareIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
+
+        activity.StartActivity(Intent.CreateChooser(shareIntent, title));
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private async Task<string> BuildZipAsync(IReadOnlyList<(Guid Id, string Name)> projects, string cacheRootDir)
+    {
+        var exportsDir = Path.Combine(cacheRootDir, "exports");
         Directory.CreateDirectory(exportsDir);
 
-        var safeName = string.Concat(projectName
-            .Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' ')
-            ).Trim().Replace(' ', '_');
-        var zipPath = Path.Combine(exportsDir, $"{safeName}.khepri");
+        var zipFileName = projects.Count == 1
+            ? Sanitize(projects[0].Name) + ".khepri"
+            : $"khepri_{projects.Count}_projects.khepri";
+        var zipPath = Path.Combine(exportsDir, zipFileName);
 
-        // Build the zip on a background thread — frames can be large
+        // Build the zip on a background thread — frames can be large.
+        // Each project goes in its own {projectId}/ subfolder so multiple projects
+        // can coexist in one archive.
         await Task.Run(() =>
         {
             if (File.Exists(zipPath))
             {
                 File.Delete(zipPath);
             }
-            ZipFile.CreateFromDirectory(projectFolder, zipPath,
-                CompressionLevel.Fastest, includeBaseDirectory: false);
+
+            using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+            foreach (var (id, _) in projects)
+            {
+                var folder = _repository.GetProjectFolderPath(id);
+                if (!Directory.Exists(folder))
+                {
+                    continue;
+                }
+
+                foreach (var file in Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories))
+                {
+                    var relPath = Path.GetRelativePath(folder, file).Replace('\\', '/');
+                    zip.CreateEntryFromFile(file, $"{id}/{relPath}", CompressionLevel.Fastest);
+                }
+            }
         });
 
-        // Obtain a content:// URI via FileProvider
-        var fileUri = AndroidX.Core.Content.FileProvider.GetUriForFile(
-            activity,
-            activity.PackageName + ".fileprovider",
-            new Java.IO.File(zipPath));
-
-        var shareIntent = new Intent(Intent.ActionSend);
-        shareIntent.SetType("application/octet-stream");
-        shareIntent.PutExtra(Intent.ExtraStream, fileUri);
-        shareIntent.PutExtra(Intent.ExtraSubject, $"Khepri project: {projectName}");
-        shareIntent.AddFlags(ActivityFlags.GrantReadUriPermission);
-
-        activity.StartActivity(Intent.CreateChooser(shareIntent, $"Export \u201c{projectName}\u201d"));
+        return zipPath;
     }
+
+    private static string Sanitize(string name)
+        => string.Concat(name.Where(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' || c == ' '))
+               .Trim().Replace(' ', '_');
 }

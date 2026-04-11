@@ -3,6 +3,11 @@
 
 using CommunityToolkit.Maui.Core;
 using Khepri.Infrastructure.Timelapse;
+#if ANDROID
+using Android.Graphics;
+using Android.Media;
+using Path = System.IO.Path;
+#endif
 
 namespace Khepri;
 
@@ -14,6 +19,7 @@ public partial class CameraPage : ContentPage
     private bool _capturing;
     private bool _cameraStarted;
     private bool _flipping;
+    private bool _isFrontCamera;
 
     // Available cameras discovered on first load.
     private IReadOnlyList<CameraInfo>? _cameras;
@@ -48,6 +54,7 @@ public partial class CameraPage : ContentPage
             }
             _activeCameraIndex = rearIdx >= 0 ? rearIdx : 0;
             CameraPreview.SelectedCamera = _cameras[_activeCameraIndex];
+            _isFrontCamera = _cameras[_activeCameraIndex].Position == CameraPosition.Front;
         }
 
         await CameraPreview.StartCameraPreview(CancellationToken.None);
@@ -124,6 +131,7 @@ public partial class CameraPage : ContentPage
 
             _activeCameraIndex = nextIndex;
             CameraPreview.SelectedCamera = _cameras[_activeCameraIndex];
+            _isFrontCamera = _cameras[_activeCameraIndex].Position == CameraPosition.Front;
 
             await CameraPreview.StartCameraPreview(CancellationToken.None);
             _cameraStarted = true;
@@ -148,32 +156,53 @@ public partial class CameraPage : ContentPage
 
     private async void OnMediaCaptured(object? sender, MediaCapturedEventArgs e)
     {
-        // Save the image on the thread-pool thread where this event fires.
-        string? destPath = null;
+        // Buffer the stream immediately before any async suspension.
+        // e.Media is already in-memory (MemoryStream from the camera layer), so this
+        // is a fast buffer copy that keeps the byte array alive across thread boundaries.
+        if (e.Media.CanSeek)
+        {
+            e.Media.Seek(0, SeekOrigin.Begin);
+        }
+        byte[] imageBytes;
+        using (var ms = new MemoryStream())
+        {
+            e.Media.CopyTo(ms);
+            imageBytes = ms.ToArray();
+        }
+
+        // Offload all disk I/O and bitmap processing to the thread pool.
+        // MediaCaptured fires on the main thread; FlipImageHorizontally in particular is
+        // expensive (BitmapFactory.DecodeFile + Matrix + Compress) and would freeze the UI.
+        // Task.Run is the .NET equivalent of withContext(Dispatchers.IO) in Kotlin.
+        string? captured = null;
         try
         {
-            if (e.Media.CanSeek)
+            captured = await Task.Run(async () =>
             {
-                e.Media.Seek(0, SeekOrigin.Begin);
-            }
+                var destDir = FramesDir ?? Path.Combine(FileSystem.AppDataDirectory, "frames");
+                Directory.CreateDirectory(destDir);
+                var destPath = Path.Combine(destDir, $"{Guid.NewGuid()}.jpg");
 
-            var destDir = FramesDir ?? Path.Combine(FileSystem.AppDataDirectory, "frames");
-            Directory.CreateDirectory(destDir);
-            destPath = Path.Combine(destDir, $"{Guid.NewGuid()}.jpg");
+                await File.WriteAllBytesAsync(destPath, imageBytes);
 
-            await using var dst = File.OpenWrite(destPath);
-            await e.Media.CopyToAsync(dst);
+                // Front camera output is horizontally mirrored relative to the preview.
+                // Flip it back so it stays aligned with the overlay.
+#if ANDROID
+                if (_isFrontCamera)
+                {
+                    FlipImageHorizontally(destPath);
+                }
+#endif
+                return destPath;
+            });
         }
         catch (Exception ex)
         {
-            destPath = null;
             System.Diagnostics.Debug.WriteLine($"[Khepri] Frame save failed: {ex.Message}");
         }
 
         // StopCameraPreview → ProcessCameraProvider.UnbindAll() AND PopModalAsync →
         // CameraViewHandler.DisconnectHandler → UnbindAll() both assert the main thread.
-        // Capture the result path in a local before switching threads.
-        var captured = destPath;
         await MainThread.InvokeOnMainThreadAsync(async () =>
         {
             if (_cameraStarted)
@@ -203,4 +232,48 @@ public partial class CameraPage : ContentPage
         await Navigation.PopModalAsync(animated: false);
         MauiCameraService.SetResult(null);
     }
+
+#if ANDROID
+    private static void FlipImageHorizontally(string path)
+    {
+        var bmp = BitmapFactory.DecodeFile(path);
+        if (bmp is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // Normalise EXIF rotation first, then apply horizontal flip.
+            var exif = new ExifInterface(path);
+            var orientation = exif.GetAttributeInt(ExifInterface.TagOrientation, 1);
+            float rotateDegrees = orientation switch
+            {
+                6 => 90f,
+                3 => 180f,
+                8 => 270f,
+                _ => 0f
+            };
+
+            var matrix = new Matrix();
+            if (rotateDegrees != 0f)
+            {
+                matrix.PostRotate(rotateDegrees);
+            }
+
+            matrix.PostScale(-1f, 1f);              // horizontal flip
+
+            var flipped = Bitmap.CreateBitmap(bmp, 0, 0, bmp.Width, bmp.Height, matrix, true)!;
+            bmp.Recycle();
+
+            using var stream = File.Create(path);
+            flipped.Compress(Bitmap.CompressFormat.Jpeg!, 92, stream);
+            flipped.Recycle();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Khepri] Front-camera flip failed: {ex.Message}");
+        }
+    }
+#endif
 }

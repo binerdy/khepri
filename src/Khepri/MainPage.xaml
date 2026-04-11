@@ -14,7 +14,7 @@
         <Grid Grid.Row="0" Padding="20,52,20,12">
 
             <!-- Single header — icons disabled until selection mode -->
-            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto,Auto,Auto,Auto">
 
                 <!-- KHEPRI label / selected count -->
                 <VerticalStackLayout Grid.Column="0"
@@ -77,8 +77,18 @@
                              Source="{AppThemeBinding Light=import_dark.svg, Dark=import_light.svg}"
                              Clicked="OnImportClicked" />
 
+                <!-- Export icon — hidden in selection mode -->
+                <ImageButton Grid.Column="4"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             Padding="12"
+                             BackgroundColor="Transparent"
+                             IsVisible="{Binding IsNotSelecting}"
+                             Source="{AppThemeBinding Light=export_dark.svg, Dark=export_light.svg}"
+                             Clicked="OnExportClicked" />
+
                 <!-- Cancel — visible only in selection mode -->
-                <Button Grid.Column="4"
+                <Button Grid.Column="5"
                         Text="CANCEL"
                         FontSize="11"
                         CharacterSpacing="1"
@@ -89,7 +99,7 @@
                         Padding="8,0" />
 
                 <!-- OK — visible in selection mode to confirm action -->
-                <Button Grid.Column="5"
+                <Button Grid.Column="6"
                         Text="OK"
                         FontSize="11"
                         FontAttributes="Bold"
@@ -102,7 +112,7 @@
                         MinimumWidthRequest="40" />
 
                 <!-- + button — visible only when not selecting -->
-                <Button Grid.Column="5"
+                <Button Grid.Column="6"
                         Text="+"
                         FontSize="24"
                         Clicked="OnNewProjectClicked"

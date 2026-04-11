@@ -4,9 +4,9 @@
 namespace Khepri.Infrastructure;
 
 /// <summary>
-/// Zips a project folder and sends it to the OS share sheet as a .khepri file.
+/// Zips one or more project folders into a single .khepri file and sends it to the OS share sheet.
 /// </summary>
 public interface IProjectExportService
 {
-    Task ExportAsync(Guid projectId, string projectName);
+    Task ExportAsync(IReadOnlyList<(Guid Id, string Name)> projects);
 }

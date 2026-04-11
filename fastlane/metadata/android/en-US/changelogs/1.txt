@@ -6,3 +6,4 @@ Initial release of Khepri — the timelapse camera app.
 • In-app preview and H.264/MP4 export
 • Rename, clone, and organise multiple projects
 • Export / Import projects
+• View and share Frames

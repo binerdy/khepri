@@ -55,36 +55,36 @@ public sealed class ProjectImportServiceTests : IDisposable
         writer.Write(content);
     }
 
-    // ── Tests ─────────────────────────────────────────────────────────────────
+    // ── Tests — legacy single-project format ──────────────────────────────────
 
     [Fact]
-    public async Task Import_WhenNoProjectJson_ReturnsNull()
+    public async Task Import_WhenNoProjectJson_ReturnsEmptyList()
     {
         using var zip = BuildZip(z => AddEntry(z, "frame.jpg", "data"));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBeNull();
+        result.ShouldBeEmpty();
     }
 
     [Fact]
-    public async Task Import_WhenProjectJsonMissingId_ReturnsNull()
+    public async Task Import_WhenProjectJsonMissingId_ReturnsEmptyList()
     {
         using var zip = BuildZip(z => AddEntry(z, "project.json", "{\"Name\":\"Test\"}"));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBeNull();
+        result.ShouldBeEmpty();
     }
 
     [Fact]
-    public async Task Import_WhenProjectJsonIdNotGuid_ReturnsNull()
+    public async Task Import_WhenProjectJsonIdNotGuid_ReturnsEmptyList()
     {
         using var zip = BuildZip(z => AddEntry(z, "project.json", "{\"Id\":\"not-a-guid\",\"Name\":\"Test\"}"));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBeNull();
+        result.ShouldBeEmpty();
     }
 
     [Fact]
@@ -94,9 +94,9 @@ public sealed class ProjectImportServiceTests : IDisposable
         var json = $"{{\"Id\":\"{id}\",\"Name\":\"Sunrise\"}}";
         using var zip = BuildZip(z => AddEntry(z, "project.json", json));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBe("Sunrise");
+        result.ShouldBe(["Sunrise"]);
     }
 
     [Fact]
@@ -110,7 +110,7 @@ public sealed class ProjectImportServiceTests : IDisposable
             AddEntry(z, "frame1.jpg", "jpeg-data");
         });
 
-        await _sut.ImportAsync(zip);
+        await _sut.ImportProjectsAsync(zip);
 
         var projectFolder = Path.Combine(_root, id.ToString());
         Directory.Exists(projectFolder).ShouldBeTrue();
@@ -129,9 +129,9 @@ public sealed class ProjectImportServiceTests : IDisposable
         var json = $"{{\"Id\":\"{id}\",\"Name\":\"Updated\"}}";
         using var zip = BuildZip(z => AddEntry(z, "project.json", json));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBe("Updated");
+        result.ShouldBe(["Updated"]);
         File.Exists(Path.Combine(projectFolder, "old-file.txt")).ShouldBeFalse();
         File.Exists(Path.Combine(projectFolder, "project.json")).ShouldBeTrue();
     }
@@ -143,8 +143,74 @@ public sealed class ProjectImportServiceTests : IDisposable
         var json = $"{{\"Id\":\"{id}\"}}";
         using var zip = BuildZip(z => AddEntry(z, "project.json", json));
 
-        var result = await _sut.ImportAsync(zip);
+        var result = await _sut.ImportProjectsAsync(zip);
 
-        result.ShouldBe("Imported Project");
+        result.ShouldBe(["Imported Project"]);
+    }
+
+    // ── Tests — multi-project format ──────────────────────────────────────────
+
+    [Fact]
+    public async Task Import_MultiProject_ReturnsAllProjectNames()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var json1 = $"{{\"Id\":\"{id1}\",\"Name\":\"Alpha\"}}";
+        var json2 = $"{{\"Id\":\"{id2}\",\"Name\":\"Beta\"}}";
+        using var zip = BuildZip(z =>
+        {
+            AddEntry(z, $"{id1}/project.json", json1);
+            AddEntry(z, $"{id1}/frame1.jpg", "data");
+            AddEntry(z, $"{id2}/project.json", json2);
+            AddEntry(z, $"{id2}/frame2.jpg", "data");
+        });
+
+        var result = await _sut.ImportProjectsAsync(zip);
+
+        result.Count.ShouldBe(2);
+        result.ShouldContain("Alpha");
+        result.ShouldContain("Beta");
+    }
+
+    [Fact]
+    public async Task Import_MultiProject_ExtractsEachProjectToOwnFolder()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+        var json1 = $"{{\"Id\":\"{id1}\",\"Name\":\"Alpha\"}}";
+        var json2 = $"{{\"Id\":\"{id2}\",\"Name\":\"Beta\"}}";
+        using var zip = BuildZip(z =>
+        {
+            AddEntry(z, $"{id1}/project.json", json1);
+            AddEntry(z, $"{id1}/frame1.jpg", "data1");
+            AddEntry(z, $"{id2}/project.json", json2);
+            AddEntry(z, $"{id2}/frame2.jpg", "data2");
+        });
+
+        await _sut.ImportProjectsAsync(zip);
+
+        File.Exists(Path.Combine(_root, id1.ToString(), "project.json")).ShouldBeTrue();
+        File.Exists(Path.Combine(_root, id1.ToString(), "frame1.jpg")).ShouldBeTrue();
+        File.Exists(Path.Combine(_root, id2.ToString(), "project.json")).ShouldBeTrue();
+        File.Exists(Path.Combine(_root, id2.ToString(), "frame2.jpg")).ShouldBeTrue();
+        // Files must not bleed across projects
+        File.Exists(Path.Combine(_root, id1.ToString(), "frame2.jpg")).ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task Import_MultiProject_SkipsEntriesWithNoValidManifest()
+    {
+        var id1 = Guid.NewGuid();
+        var json1 = $"{{\"Id\":\"{id1}\",\"Name\":\"Alpha\"}}";
+        using var zip = BuildZip(z =>
+        {
+            AddEntry(z, $"{id1}/project.json", json1);
+            // second subfolder has no project.json — should be silently skipped
+            AddEntry(z, "other/frame.jpg", "data");
+        });
+
+        var result = await _sut.ImportProjectsAsync(zip);
+
+        result.ShouldBe(["Alpha"]);
     }
 }

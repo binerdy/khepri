@@ -67,7 +67,7 @@ public partial class ProjectDetailPage : ContentPage
         }
         try
         {
-            await _export.ExportAsync(_vm.CurrentProjectId, _vm.Project.Name);
+            await _export.ExportAsync([(_vm.CurrentProjectId, _vm.Project.Name)]);
         }
         catch (Exception ex)
         {
@@ -121,17 +121,23 @@ public partial class ProjectDetailPage : ContentPage
         await _vm.DeleteSelectedFramesAsync(items);
     }
 
-    private void OnFrameTapped(object? sender, TappedEventArgs e)
+    private async void OnFrameTapped(object? sender, TappedEventArgs e)
     {
-        if (!_vm.IsSelecting)
+        if (_vm.IsSelecting)
         {
+            if (sender is Element { BindingContext: FrameDisplayItem item })
+            {
+                item.IsSelected = !item.IsSelected;
+                _vm.SelectedCount = _vm.DisplayFrames.Count(f => f.IsSelected);
+            }
             return;
         }
 
-        if (sender is Element { BindingContext: FrameDisplayItem item })
+        // Not in selection mode — open full-screen viewer.
+        if (sender is Element { BindingContext: FrameDisplayItem frame })
         {
-            item.IsSelected = !item.IsSelected;
-            _vm.SelectedCount = _vm.DisplayFrames.Count(f => f.IsSelected);
+            var viewer = new FrameViewerPage(frame.FrameFilePath, frame.Label);
+            await Navigation.PushModalAsync(viewer, animated: false);
         }
     }
 

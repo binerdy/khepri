@@ -51,9 +51,15 @@
                 <Button Grid.Column="0"
                         Text="Cancel"
                         Clicked="OnCancelClicked" />
-                <Button Grid.Column="1"
-                        Text="📷  Capture"
-                        Clicked="OnCaptureClicked" />
+                <ImageButton Grid.Column="1"
+                             Source="capture_light.svg"
+                             WidthRequest="56"
+                             HeightRequest="56"
+                             CornerRadius="28"
+                             Padding="12"
+                             BackgroundColor="#66000000"
+                             HorizontalOptions="Center"
+                             Clicked="OnCaptureClicked" />
             </Grid>
 
         </VerticalStackLayout>
