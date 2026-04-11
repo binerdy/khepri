@@ -5,7 +5,7 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="Black">
 
-    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+    <Grid RowDefinitions="Auto,*" Padding="0">
 
         <!-- ── Header ─────────────────────────────────────────────────────── -->
         <Grid Grid.Row="0"
@@ -39,17 +39,6 @@
                HorizontalOptions="Fill"
                VerticalOptions="Fill" />
 
-        <!-- ── Footer ─────────────────────────────────────────────────────── -->
-        <Grid Grid.Row="2" Padding="20,16,20,48">
-            <Button Text="SHARE"
-                    FontSize="11"
-                    FontAttributes="Bold"
-                    CharacterSpacing="2"
-                    Clicked="OnShareClicked"
-                    BackgroundColor="White"
-                    TextColor="Black"
-                    CornerRadius="0" />
-        </Grid>
 
     </Grid>
 

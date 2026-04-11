@@ -102,25 +102,25 @@
                         Padding="8,0" />
 
                 <!-- Share frames -->
-                <ImageButton Grid.Column="5"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             Padding="12"
-                             BackgroundColor="Transparent"
-                             IsEnabled="{Binding HasFrames}"
-                             IsVisible="{Binding IsNotSelecting}"
-                             Source="{AppThemeBinding Light=export_dark.svg, Dark=export_light.svg}"
-                             Clicked="OnShareFramesClicked" />
+                <Button Grid.Column="5"
+                        Text="SHARE"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="12"
+                        BackgroundColor="Transparent"
+                        IsEnabled="{Binding HasFrames}"
+                        IsVisible="{Binding IsNotSelecting}"
+                        Clicked="OnShareFramesClicked" />
 
                 <!-- Import from gallery -->
-                <ImageButton Grid.Column="6"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             Padding="12"
-                             BackgroundColor="Transparent"
-                             IsVisible="{Binding IsNotSelecting}"
-                             Source="{AppThemeBinding Light=import_dark.svg, Dark=import_light.svg}"
-                             Clicked="OnImportFromGalleryClicked" />
+                <Button Grid.Column="6"
+                        Text="IMPORT"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="12"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsNotSelecting}"
+                        Clicked="OnImportFromGalleryClicked" />
 
                 <!-- Bin - hidden in selection mode -->
                 <ImageButton Grid.Column="7"
@@ -260,17 +260,6 @@
                     Command="{Binding CaptureCommand}"
                     BackgroundColor="{AppThemeBinding Light=Black, Dark=White}"
                     TextColor="{AppThemeBinding Light=White, Dark=#111111}"
-                    CornerRadius="0" />
-
-            <Button Grid.Column="1"
-                    Text="IMPORT"
-                    FontSize="11"
-                    CharacterSpacing="1"
-                    Clicked="OnImportFromGalleryClicked"
-                    BackgroundColor="Transparent"
-                    TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                    BorderColor="{AppThemeBinding Light=Black, Dark=White}"
-                    BorderWidth="1"
                     CornerRadius="0" />
 
             <Button Grid.Column="2"

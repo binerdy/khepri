@@ -68,24 +68,24 @@
                              Clicked="OnCloneSelectedClicked" />
 
                 <!-- Import icon — hidden in selection mode -->
-                <ImageButton Grid.Column="3"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             Padding="12"
-                             BackgroundColor="Transparent"
-                             IsVisible="{Binding IsNotSelecting}"
-                             Source="{AppThemeBinding Light=import_dark.svg, Dark=import_light.svg}"
-                             Clicked="OnImportClicked" />
+                <Button Grid.Column="3"
+                        Text="IMPORT"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="12"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsNotSelecting}"
+                        Clicked="OnImportClicked" />
 
                 <!-- Export icon — hidden in selection mode -->
-                <ImageButton Grid.Column="4"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             Padding="12"
-                             BackgroundColor="Transparent"
-                             IsVisible="{Binding IsNotSelecting}"
-                             Source="{AppThemeBinding Light=export_dark.svg, Dark=export_light.svg}"
-                             Clicked="OnExportClicked" />
+                <Button Grid.Column="4"
+                        Text="EXPORT"
+                        WidthRequest="44"
+                        HeightRequest="44"
+                        Padding="12"
+                        BackgroundColor="Transparent"
+                        IsVisible="{Binding IsNotSelecting}"
+                        Clicked="OnExportClicked" />
 
                 <!-- Cancel — visible only in selection mode -->
                 <Button Grid.Column="5"
