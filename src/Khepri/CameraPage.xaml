@@ -8,6 +8,11 @@
 
     <Grid>
 
+        <!-- Tap anywhere on the viewfinder to capture -->
+        <Grid.GestureRecognizers>
+            <TapGestureRecognizer Tapped="OnCaptureClicked" />
+        </Grid.GestureRecognizers>
+
         <!-- Live camera preview — fills the whole screen -->
         <toolkit:CameraView x:Name="CameraPreview"
                             HorizontalOptions="Fill"

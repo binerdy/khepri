@@ -5,7 +5,7 @@ using Khepri.Domain.Timelapse;
 
 namespace Khepri.Application.Timelapse;
 
-public sealed class TimelapseService(ITimelapseRepository repository, ICameraService camera)
+public sealed class TimelapseService(ITimelapseRepository repository, ICameraService camera, IExifDateReader exifDateReader)
 {
     public Task<IReadOnlyList<TimelapseProject>> GetAllProjectsAsync(CancellationToken cancellationToken = default)
         => repository.GetAllAsync(cancellationToken);
@@ -57,7 +57,8 @@ public sealed class TimelapseService(ITimelapseRepository repository, ICameraSer
         var destPath = Path.Combine(destDir, $"{Guid.NewGuid()}{Path.GetExtension(srcPath)}");
         await Task.Run(() => File.Copy(srcPath, destPath, overwrite: false), cancellationToken);
 
-        var frame = new TimelapseFrame(Guid.NewGuid(), project.Frames.Count, DateTimeOffset.UtcNow, destPath);
+        var capturedAt = exifDateReader.ReadDateTaken(srcPath) ?? DateTimeOffset.UtcNow;
+        var frame = new TimelapseFrame(Guid.NewGuid(), project.Frames.Count, capturedAt, destPath);
         project.AddFrame(frame);
         await repository.SaveAsync(project, cancellationToken);
         return frame;

@@ -14,8 +14,14 @@ public sealed class TimelapseFrame
     public double OffsetY { get; private set; }
     public double Rotation { get; private set; }
     public double Scale { get; private set; } = 1d;
+    /// <summary>
+    /// Width of the alignment viewer in dp at the time this frame's offset was saved.
+    /// Used to convert dp offsets to video pixel offsets during export.
+    /// Zero means unknown (old data) — the export falls back to a sensible default.
+    /// </summary>
+    public double ReferenceViewWidth { get; private set; }
 
-    public TimelapseFrame(Guid id, int index, DateTimeOffset capturedAt, string filePath, string? alignedFilePath = null, double offsetX = 0d, double offsetY = 0d, double rotation = 0d, double scale = 1d)
+    public TimelapseFrame(Guid id, int index, DateTimeOffset capturedAt, string filePath, string? alignedFilePath = null, double offsetX = 0d, double offsetY = 0d, double rotation = 0d, double scale = 1d, double referenceViewWidth = 0d)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         if (index < 0)
@@ -32,6 +38,7 @@ public sealed class TimelapseFrame
         OffsetY = offsetY;
         Rotation = rotation;
         Scale = scale;
+        ReferenceViewWidth = referenceViewWidth;
     }
 
     public string ActiveFilePath => AlignedFilePath ?? FilePath;
@@ -42,12 +49,16 @@ public sealed class TimelapseFrame
         AlignedFilePath = path;
     }
 
-    public void SetTransform(double x, double y, double rotation = 0d, double scale = 1d)
+    public void SetTransform(double x, double y, double rotation = 0d, double scale = 1d, double referenceViewWidth = 0d)
     {
         OffsetX = x;
         OffsetY = y;
         Rotation = rotation;
         Scale = scale;
+        if (referenceViewWidth > 0)
+        {
+            ReferenceViewWidth = referenceViewWidth;
+        }
     }
 
     internal void Reindex(int newIndex) => Index = newIndex;

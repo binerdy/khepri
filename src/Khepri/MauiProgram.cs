@@ -42,6 +42,7 @@ public static class MauiProgram
         builder.Services.AddSingleton<JsonTimelapseRepository>();
         builder.Services.AddSingleton<ITimelapseRepository>(sp => sp.GetRequiredService<JsonTimelapseRepository>());
         builder.Services.AddSingleton<ICameraService, MauiCameraService>();
+        builder.Services.AddSingleton<IExifDateReader, JpegExifDateReader>();
 #if ANDROID
         builder.Services.AddSingleton<IImageTransformService, Platforms.Android.AndroidImageTransformService>();
         builder.Services.AddSingleton<IVideoExportService, Platforms.Android.VideoExportService>();

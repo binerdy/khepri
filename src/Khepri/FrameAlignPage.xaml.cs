@@ -123,14 +123,16 @@ public sealed partial class FrameAlignPage : ContentPage
 
     // ─ Step buttons ──────────────────────────────────────────────────────────
 
-    private void OnOffsetXDec(object? s, EventArgs e) { _vm.OffsetX -= 1.0; OffsetXEntry.Text = _vm.OffsetX.ToString("F1", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnOffsetXInc(object? s, EventArgs e) { _vm.OffsetX += 1.0; OffsetXEntry.Text = _vm.OffsetX.ToString("F1", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnOffsetYDec(object? s, EventArgs e) { _vm.OffsetY -= 1.0; OffsetYEntry.Text = _vm.OffsetY.ToString("F1", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnOffsetYInc(object? s, EventArgs e) { _vm.OffsetY += 1.0; OffsetYEntry.Text = _vm.OffsetY.ToString("F1", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnRotationDec(object? s, EventArgs e) { _vm.Rotation -= 0.5; RotationEntry.Text = _vm.Rotation.ToString("F2", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnRotationInc(object? s, EventArgs e) { _vm.Rotation += 0.5; RotationEntry.Text = _vm.Rotation.ToString("F2", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnScaleDec(object? s, EventArgs e) { _vm.Scale = Math.Max(0.01, _vm.Scale - 0.01); ScaleEntry.Text = _vm.Scale.ToString("F3", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
-    private void OnScaleInc(object? s, EventArgs e) { _vm.Scale += 0.01; ScaleEntry.Text = _vm.Scale.ToString("F3", CultureInfo.InvariantCulture); _ = _vm.AutoSaveAsync(); }
+    private void PrecisionSave() { _vm.ReferenceViewWidth = ViewerGrid.Width; _ = _vm.AutoSaveAsync(); }
+
+    private void OnOffsetXDec(object? s, EventArgs e) { _vm.OffsetX -= 1.0; OffsetXEntry.Text = _vm.OffsetX.ToString("F1", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnOffsetXInc(object? s, EventArgs e) { _vm.OffsetX += 1.0; OffsetXEntry.Text = _vm.OffsetX.ToString("F1", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnOffsetYDec(object? s, EventArgs e) { _vm.OffsetY -= 1.0; OffsetYEntry.Text = _vm.OffsetY.ToString("F1", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnOffsetYInc(object? s, EventArgs e) { _vm.OffsetY += 1.0; OffsetYEntry.Text = _vm.OffsetY.ToString("F1", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnRotationDec(object? s, EventArgs e) { _vm.Rotation -= 0.5; RotationEntry.Text = _vm.Rotation.ToString("F2", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnRotationInc(object? s, EventArgs e) { _vm.Rotation += 0.5; RotationEntry.Text = _vm.Rotation.ToString("F2", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnScaleDec(object? s, EventArgs e) { _vm.Scale = Math.Max(0.01, _vm.Scale - 0.01); ScaleEntry.Text = _vm.Scale.ToString("F3", CultureInfo.InvariantCulture); PrecisionSave(); }
+    private void OnScaleInc(object? s, EventArgs e) { _vm.Scale += 0.01; ScaleEntry.Text = _vm.Scale.ToString("F3", CultureInfo.InvariantCulture); PrecisionSave(); }
 
     // ─ Direct entry input ────────────────────────────────────────────────────
 
@@ -139,7 +141,7 @@ public sealed partial class FrameAlignPage : ContentPage
     private void CommitOffsetX()
     {
         if (double.TryParse(OffsetXEntry.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-        { _vm.OffsetX = v; _ = _vm.AutoSaveAsync(); }
+        { _vm.OffsetX = v; PrecisionSave(); }
         OffsetXEntry.Text = _vm.OffsetX.ToString("F1", CultureInfo.InvariantCulture);
     }
 
@@ -148,7 +150,7 @@ public sealed partial class FrameAlignPage : ContentPage
     private void CommitOffsetY()
     {
         if (double.TryParse(OffsetYEntry.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-        { _vm.OffsetY = v; _ = _vm.AutoSaveAsync(); }
+        { _vm.OffsetY = v; PrecisionSave(); }
         OffsetYEntry.Text = _vm.OffsetY.ToString("F1", CultureInfo.InvariantCulture);
     }
 
@@ -157,7 +159,7 @@ public sealed partial class FrameAlignPage : ContentPage
     private void CommitRotation()
     {
         if (double.TryParse(RotationEntry.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-        { _vm.Rotation = v; _ = _vm.AutoSaveAsync(); }
+        { _vm.Rotation = v; PrecisionSave(); }
         RotationEntry.Text = _vm.Rotation.ToString("F2", CultureInfo.InvariantCulture);
     }
 
@@ -166,7 +168,7 @@ public sealed partial class FrameAlignPage : ContentPage
     private void CommitScale()
     {
         if (double.TryParse(ScaleEntry.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v))
-        { _vm.Scale = Math.Max(0.01, v); _ = _vm.AutoSaveAsync(); }
+        { _vm.Scale = Math.Max(0.01, v); PrecisionSave(); }
         ScaleEntry.Text = _vm.Scale.ToString("F3", CultureInfo.InvariantCulture);
     }
 

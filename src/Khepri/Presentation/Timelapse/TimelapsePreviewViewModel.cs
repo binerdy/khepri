@@ -13,6 +13,7 @@ public sealed partial class TimelapsePreviewViewModel(
 {
     private Guid _projectId;
     private IReadOnlyList<string>? _framePaths;
+    private IReadOnlyList<FrameRenderInfo>? _frameRenderInfos;
     private IReadOnlyList<(double X, double Y)>? _frameOffsets;
     private IReadOnlyList<double>? _frameRotations;
     private IReadOnlyList<double>? _frameScales;
@@ -135,6 +136,8 @@ public sealed partial class TimelapsePreviewViewModel(
         ProjectName = project.Name.ToUpperInvariant();
         var ordered = project.Frames.OrderBy(f => f.Index).ToList();
         _framePaths = ordered.Select(f => f.ActiveFilePath).ToList();
+        _frameRenderInfos = ordered.Select(f => new FrameRenderInfo(
+            f.ActiveFilePath, f.OffsetX, f.OffsetY, f.Rotation, f.Scale, f.ReferenceViewWidth)).ToList();
         _frameOffsets = ordered.Select(f => (f.OffsetX, f.OffsetY)).ToList();
         _frameRotations = ordered.Select(f => f.Rotation).ToList();
         _frameScales = ordered.Select(f => f.Scale).ToList();
@@ -229,7 +232,7 @@ public sealed partial class TimelapsePreviewViewModel(
             var progressReporter = new Progress<int>(pct => ExportProgress = pct / 100.0);
 
             var path = await videoExportService.ExportAsync(
-                _framePaths,
+                _frameRenderInfos ?? [],
                 SecondsPerFrame,
                 transition,
                 progressReporter,

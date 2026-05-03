@@ -13,7 +13,9 @@ public sealed class FrameAlignService(ITimelapseRepository repository)
 {
     /// <summary>
     /// Stores the transform offset (<paramref name="offsetX"/>, <paramref name="offsetY"/>, in dp),
-    /// <paramref name="rotation"/> (degrees), and <paramref name="scale"/> on the frame and persists the project.
+    /// <paramref name="rotation"/> (degrees), <paramref name="scale"/>, and the
+    /// <paramref name="referenceViewWidth"/> (dp width of the alignment viewer at save time)
+    /// on the frame and persists the project.
     /// </summary>
     public async Task SaveAlignmentAsync(
         Guid projectId,
@@ -22,6 +24,7 @@ public sealed class FrameAlignService(ITimelapseRepository repository)
         double offsetY,
         double rotation = 0d,
         double scale = 1d,
+        double referenceViewWidth = 0d,
         CancellationToken cancellationToken = default)
     {
         var project = await repository.GetByIdAsync(projectId, cancellationToken)
@@ -30,7 +33,7 @@ public sealed class FrameAlignService(ITimelapseRepository repository)
         var frame = project.Frames.FirstOrDefault(f => f.Id == frameId)
             ?? throw new InvalidOperationException($"Frame {frameId} not found in project {projectId}.");
 
-        frame.SetTransform(offsetX, offsetY, rotation, scale);
+        frame.SetTransform(offsetX, offsetY, rotation, scale, referenceViewWidth);
         await repository.SaveAsync(project, cancellationToken);
     }
 

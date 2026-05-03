@@ -107,12 +107,14 @@ internal sealed class AlignmentTouchListener : Java.Lang.Object, AView.IOnTouchL
                     var remaining = e.ActionIndex == 0 ? 1 : 0;
                     _panPrevX = e.GetX(remaining);
                     _panPrevY = e.GetY(remaining);
+                    _vm.ReferenceViewWidth = v?.Width / density ?? 360.0;
                     _ = _vm.AutoSaveAsync();
                     return true;
                 }
 
             case MotionEventActions.Up:
             case MotionEventActions.Cancel:
+                _vm.ReferenceViewWidth = v?.Width / density ?? 360.0;
                 _ = _vm.AutoSaveAsync();
                 return true;
         }

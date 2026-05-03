@@ -120,7 +120,8 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
                 OffsetX = f.OffsetX,
                 OffsetY = f.OffsetY,
                 Rotation = f.Rotation,
-                Scale = f.Scale
+                Scale = f.Scale,
+                ReferenceViewWidth = f.ReferenceViewWidth
             }).ToList()
         };
 
@@ -169,7 +170,7 @@ public sealed class JsonTimelapseRepository : ITimelapseRepository
         }
 
         var frames = dto.Frames?.Select(f => new TimelapseFrame(
-            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath, f.OffsetX, f.OffsetY, f.Rotation, f.Scale));
+            f.Id, f.Index, f.CapturedAt, f.FilePath, f.AlignedFilePath, f.OffsetX, f.OffsetY, f.Rotation, f.Scale, f.ReferenceViewWidth));
 
         return new TimelapseProject(dto.Id, dto.Name, dto.CreatedAt, dto.ClonedFromId, frames);
     }
@@ -197,6 +198,7 @@ internal sealed class FrameDto
     public double OffsetY { get; set; }
     public double Rotation { get; set; }
     public double Scale { get; set; } = 1d;
+    public double ReferenceViewWidth { get; set; }
 }
 
 // ── JSON source-gen context ────────────────────────────────────────────

@@ -76,6 +76,12 @@ public sealed partial class FrameAlignViewModel(
     [ObservableProperty] public partial double Rotation { get; set; }
     [ObservableProperty] public partial double Scale { get; set; } = 1d;
 
+    /// <summary>
+    /// dp width of the alignment viewer at the time the current gesture started.
+    /// Set by the platform touch listener (or precision panel) before triggering a save.
+    /// </summary>
+    public double ReferenceViewWidth { get; set; }
+
     /// <summary>Opacity for the ghost (next-frame) overlay. Range 0.1 – 0.9.</summary>
     [ObservableProperty] public partial double GhostOpacity { get; set; } = 0.4;
 
@@ -87,12 +93,12 @@ public sealed partial class FrameAlignViewModel(
 
     /// <summary>Bottom layer — the frame being repositioned (opaque, draggable).</summary>
     public string? BackgroundPath => (_frames is { Count: > 0 } && CurrentIndex >= 0 && CurrentIndex < _frames.Count)
-        ? _frames[Math.Min(CurrentIndex + 1, _frames.Count - 1)].FilePath
+        ? _frames[Math.Min(CurrentIndex + 1, _frames.Count - 1)].ActiveFilePath
         : null;
 
     /// <summary>Top layer — the already-aligned reference frame (transparent, fixed).</summary>
     public string? GhostPath => (_frames is { Count: > 1 } && CurrentIndex >= 0 && CurrentIndex < _frames.Count - 1)
-        ? _frames[CurrentIndex].FilePath
+        ? _frames[CurrentIndex].ActiveFilePath
         : null;
 
     /// <summary>Playback offset of the ghost (reference) frame so it renders at its saved position.</summary>
@@ -137,7 +143,7 @@ public sealed partial class FrameAlignViewModel(
 
             var activeIdx = Math.Min(CurrentIndex + 1, _frames.Count - 1);
             return _frames
-                .Select((f, i) => new FilmstripItem(f.FilePath, i == activeIdx))
+                .Select((f, i) => new FilmstripItem(f.ActiveFilePath, i == activeIdx))
                 .ToList();
         }
     }
@@ -200,9 +206,9 @@ public sealed partial class FrameAlignViewModel(
         {
             var frame = _frames[CurrentIndex + 1];
             await alignService.SaveAlignmentAsync(
-                _projectId, frame.Id, OffsetX, OffsetY, Rotation, Scale, cancellationToken);
+                _projectId, frame.Id, OffsetX, OffsetY, Rotation, Scale, ReferenceViewWidth, cancellationToken);
             // Keep in-memory list in sync so ghost values reflect saved transforms.
-            frame.SetTransform(OffsetX, OffsetY, Rotation, Scale);
+            frame.SetTransform(OffsetX, OffsetY, Rotation, Scale, ReferenceViewWidth);
             SaveCompleted?.Invoke(this, EventArgs.Empty);
         }
         catch (OperationCanceledException) { }

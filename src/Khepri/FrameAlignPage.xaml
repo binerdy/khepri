@@ -7,7 +7,7 @@
              Shell.NavBarIsVisible="False"
              BackgroundColor="{AppThemeBinding Light=White, Dark=#111111}">
 
-    <Grid RowDefinitions="Auto,*,Auto,Auto" Padding="0">
+    <Grid RowDefinitions="Auto,*,Auto" Padding="0">
 
         <!-- ── Header ────────────────────────────────────────────────────── -->
         <Grid Grid.Row="0"
@@ -119,10 +119,100 @@
 
         </Grid>
 
+        <!-- ── Precision panel (overlays Row 1 at bottom, above ViewerGrid) -->
+        <Border Grid.Row="1"
+                x:Name="PrecisionPanel"
+                VerticalOptions="End"
+                BackgroundColor="#80000000"
+                StrokeThickness="0"
+                IsVisible="False">
+            <Grid RowDefinitions="44,44,44,44"
+                  RowSpacing="0"
+                  Padding="16,8,16,16">
+
+                <!-- Offset X -->
+                <Grid Grid.Row="0"
+                      ColumnDefinitions="36,*,80,*,36"
+                      VerticalOptions="Center">
+                    <Button Grid.Column="0" Text="−" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnOffsetXDec" VerticalOptions="Center" />
+                    <Entry Grid.Column="2" x:Name="OffsetXEntry"
+                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" BackgroundColor="#33FFFFFF"
+                           TextColor="White" ReturnType="Done" VerticalOptions="Center"
+                           Completed="OnOffsetXCompleted" Unfocused="OnOffsetXUnfocused" />
+                    <Button Grid.Column="4" Text="+" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnOffsetXInc" VerticalOptions="Center" />
+                </Grid>
+
+                <!-- Offset Y -->
+                <Grid Grid.Row="1"
+                      ColumnDefinitions="36,*,80,*,36"
+                      VerticalOptions="Center">
+                    <Button Grid.Column="0" Text="−" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnOffsetYDec" VerticalOptions="Center" />
+                    <Entry Grid.Column="2" x:Name="OffsetYEntry"
+                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" BackgroundColor="#33FFFFFF"
+                           TextColor="White" ReturnType="Done" VerticalOptions="Center"
+                           Completed="OnOffsetYCompleted" Unfocused="OnOffsetYUnfocused" />
+                    <Button Grid.Column="4" Text="+" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnOffsetYInc" VerticalOptions="Center" />
+                </Grid>
+
+                <!-- Rotation -->
+                <Grid Grid.Row="2"
+                      ColumnDefinitions="36,*,80,*,36"
+                      VerticalOptions="Center">
+                    <Button Grid.Column="0" Text="−" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnRotationDec" VerticalOptions="Center" />
+                    <Entry Grid.Column="2" x:Name="RotationEntry"
+                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" BackgroundColor="#33FFFFFF"
+                           TextColor="White" ReturnType="Done" VerticalOptions="Center"
+                           Completed="OnRotationCompleted" Unfocused="OnRotationUnfocused" />
+                    <Button Grid.Column="4" Text="+" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnRotationInc" VerticalOptions="Center" />
+                </Grid>
+
+                <!-- Zoom -->
+                <Grid Grid.Row="3"
+                      ColumnDefinitions="36,*,80,*,36"
+                      VerticalOptions="Center">
+                    <Button Grid.Column="0" Text="−" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnScaleDec" VerticalOptions="Center" />
+                    <Entry Grid.Column="2" x:Name="ScaleEntry"
+                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
+                           HorizontalTextAlignment="Center" BackgroundColor="#33FFFFFF"
+                           TextColor="White" ReturnType="Done" VerticalOptions="Center"
+                           Completed="OnScaleCompleted" Unfocused="OnScaleUnfocused" />
+                    <Button Grid.Column="4" Text="+" FontSize="20" Padding="0"
+                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
+                            BackgroundColor="#33FFFFFF" TextColor="White"
+                            Clicked="OnScaleInc" VerticalOptions="Center" />
+                </Grid>
+
+            </Grid>
+        </Border>
+
         <!-- ── Controls bar ──────────────────────────────────────────────── -->
         <Grid Grid.Row="2"
               BackgroundColor="{AppThemeBinding Light=#F5F5F5, Dark=#1A1A1A}"
-              RowDefinitions="Auto,Auto,Auto">
+              RowDefinitions="Auto,Auto">
 
             <!-- Filmstrip -->
             <CollectionView x:Name="FilmstripView"
@@ -151,10 +241,12 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
 
-            <!-- Ghost opacity slider -->
+            <!-- Ghost opacity / PREV / NEXT / PRECISION (single row) -->
             <Grid Grid.Row="1"
-                  ColumnDefinitions="Auto,*,Auto"
-                  Padding="20,8,20,4">
+                  ColumnDefinitions="Auto,*,Auto,Auto,Auto,Auto"
+                  ColumnSpacing="4"
+                  Padding="20,4,8,28">
+
                 <Label Grid.Column="0"
                        Text="GHOST"
                        FontSize="9"
@@ -162,7 +254,7 @@
                        CharacterSpacing="2"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                       Margin="0,0,12,0" />
+                       Margin="0,0,8,0" />
                 <Slider Grid.Column="1"
                         Minimum="0.1" Maximum="0.9"
                         Value="{Binding GhostOpacity}"
@@ -175,17 +267,10 @@
                        FontAttributes="Bold"
                        VerticalOptions="Center"
                        TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                       MinimumWidthRequest="40"
-                       HorizontalTextAlignment="End" />
-            </Grid>
-
-            <!-- PREV / NEXT / PRECISION -->
-            <Grid Grid.Row="2"
-                  ColumnDefinitions="Auto,Auto,*"
-                  ColumnSpacing="8"
-                  Padding="20,4,20,40">
-
-                <Button Grid.Column="0"
+                       MinimumWidthRequest="36"
+                       HorizontalTextAlignment="End"
+                       Margin="0,0,8,0" />
+                <Button Grid.Column="3"
                         Text="◀ PREV"
                         FontSize="10"
                         CharacterSpacing="1"
@@ -194,9 +279,8 @@
                         BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#222222}"
                         TextColor="{AppThemeBinding Light=Black, Dark=White}"
                         CornerRadius="0"
-                        Padding="14,8" />
-
-                <Button Grid.Column="1"
+                        Padding="12,8" />
+                <Button Grid.Column="4"
                         Text="NEXT ▶"
                         FontSize="10"
                         CharacterSpacing="1"
@@ -205,9 +289,8 @@
                         BackgroundColor="{AppThemeBinding Light=#EEEEEE, Dark=#222222}"
                         TextColor="{AppThemeBinding Light=Black, Dark=White}"
                         CornerRadius="0"
-                        Padding="14,8" />
-
-                <Button Grid.Column="2"
+                        Padding="12,8" />
+                <Button Grid.Column="5"
                         x:Name="PrecisionToggleButton"
                         Text="▼ PRECISION"
                         FontSize="10"
@@ -215,135 +298,11 @@
                         Clicked="OnPrecisionToggleClicked"
                         BackgroundColor="Transparent"
                         TextColor="{AppThemeBinding Light=#888888, Dark=#666666}"
-                        HorizontalOptions="End"
                         Padding="8,4" />
 
             </Grid>
 
         </Grid>
-
-        <!-- ── Precision panel ───────────────────────────────────────────── -->
-        <ScrollView Grid.Row="3"
-                    x:Name="PrecisionPanel"
-                    IsVisible="False">
-            <Grid RowDefinitions="48,48,48,48"
-                  RowSpacing="0"
-                  Padding="20,8,20,40">
-
-                <!-- Offset X -->
-                <Grid Grid.Row="0"
-                      ColumnDefinitions="72,36,*,36"
-                      ColumnSpacing="8"
-                      VerticalOptions="Center">
-                    <Label Grid.Column="0" Text="OFFSET X"
-                           FontSize="9" FontAttributes="Bold" CharacterSpacing="1"
-                           VerticalOptions="Center"
-                           TextColor="{AppThemeBinding Light=#888888, Dark=#666666}" />
-                    <Button Grid.Column="1" Text="−" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnOffsetXDec" VerticalOptions="Center" />
-                    <Entry Grid.Column="2" x:Name="OffsetXEntry"
-                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
-                           HorizontalTextAlignment="Center" BackgroundColor="Transparent"
-                           TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                           ReturnType="Done" VerticalOptions="Center"
-                           Completed="OnOffsetXCompleted"
-                           Unfocused="OnOffsetXUnfocused" />
-                    <Button Grid.Column="3" Text="+" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnOffsetXInc" VerticalOptions="Center" />
-                </Grid>
-
-                <!-- Offset Y -->
-                <Grid Grid.Row="1"
-                      ColumnDefinitions="72,36,*,36"
-                      ColumnSpacing="8"
-                      VerticalOptions="Center">
-                    <Label Grid.Column="0" Text="OFFSET Y"
-                           FontSize="9" FontAttributes="Bold" CharacterSpacing="1"
-                           VerticalOptions="Center"
-                           TextColor="{AppThemeBinding Light=#888888, Dark=#666666}" />
-                    <Button Grid.Column="1" Text="−" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnOffsetYDec" VerticalOptions="Center" />
-                    <Entry Grid.Column="2" x:Name="OffsetYEntry"
-                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
-                           HorizontalTextAlignment="Center" BackgroundColor="Transparent"
-                           TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                           ReturnType="Done" VerticalOptions="Center"
-                           Completed="OnOffsetYCompleted"
-                           Unfocused="OnOffsetYUnfocused" />
-                    <Button Grid.Column="3" Text="+" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnOffsetYInc" VerticalOptions="Center" />
-                </Grid>
-
-                <!-- Rotation -->
-                <Grid Grid.Row="2"
-                      ColumnDefinitions="72,36,*,36"
-                      ColumnSpacing="8"
-                      VerticalOptions="Center">
-                    <Label Grid.Column="0" Text="ROTATION"
-                           FontSize="9" FontAttributes="Bold" CharacterSpacing="1"
-                           VerticalOptions="Center"
-                           TextColor="{AppThemeBinding Light=#888888, Dark=#666666}" />
-                    <Button Grid.Column="1" Text="−" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnRotationDec" VerticalOptions="Center" />
-                    <Entry Grid.Column="2" x:Name="RotationEntry"
-                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
-                           HorizontalTextAlignment="Center" BackgroundColor="Transparent"
-                           TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                           ReturnType="Done" VerticalOptions="Center"
-                           Completed="OnRotationCompleted"
-                           Unfocused="OnRotationUnfocused" />
-                    <Button Grid.Column="3" Text="+" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnRotationInc" VerticalOptions="Center" />
-                </Grid>
-
-                <!-- Zoom -->
-                <Grid Grid.Row="3"
-                      ColumnDefinitions="72,36,*,36"
-                      ColumnSpacing="8"
-                      VerticalOptions="Center">
-                    <Label Grid.Column="0" Text="ZOOM"
-                           FontSize="9" FontAttributes="Bold" CharacterSpacing="1"
-                           VerticalOptions="Center"
-                           TextColor="{AppThemeBinding Light=#888888, Dark=#666666}" />
-                    <Button Grid.Column="1" Text="−" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnScaleDec" VerticalOptions="Center" />
-                    <Entry Grid.Column="2" x:Name="ScaleEntry"
-                           Keyboard="Numeric" FontSize="13" FontAttributes="Bold"
-                           HorizontalTextAlignment="Center" BackgroundColor="Transparent"
-                           TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                           ReturnType="Done" VerticalOptions="Center"
-                           Completed="OnScaleCompleted"
-                           Unfocused="OnScaleUnfocused" />
-                    <Button Grid.Column="3" Text="+" FontSize="20" Padding="0"
-                            WidthRequest="36" HeightRequest="36" CornerRadius="4"
-                            BackgroundColor="{AppThemeBinding Light=#F0F0F0, Dark=#222222}"
-                            TextColor="{AppThemeBinding Light=Black, Dark=White}"
-                            Clicked="OnScaleInc" VerticalOptions="Center" />
-                </Grid>
-
-            </Grid>
-        </ScrollView>
 
     </Grid>
 </ContentPage>

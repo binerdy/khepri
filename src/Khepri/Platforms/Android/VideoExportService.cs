@@ -15,42 +15,47 @@ public sealed class VideoExportService : IVideoExportService
     private const int BitRate = 4_000_000; // 4 Mbps
     private const int IFrameInterval = 2;
     private const int MaxWidth = 1280;
-    // NV12 / YUV420SemiPlanar — universally supported on Android 21+
-    private const int ColorFormatNv12 = 21;
+    // NV21 / YUV420SemiPlanar (value 21) — Android hardware encoders expect V before U
+    private const int ColorFormatNv21 = 21;
 
     public Task<string> ExportAsync(
-        IReadOnlyList<string> framePaths,
+        IReadOnlyList<FrameRenderInfo> frames,
         double secondsPerFrame,
         TransitionEffect transition,
         IProgress<int>? progress = null,
         CancellationToken cancellationToken = default)
         => Task.Run(
-            () => Encode(framePaths, secondsPerFrame, transition, progress, cancellationToken),
+            () => Encode(frames, secondsPerFrame, transition, progress, cancellationToken),
             cancellationToken);
 
     private static string Encode(
-        IReadOnlyList<string> framePaths,
+        IReadOnlyList<FrameRenderInfo> frames,
         double secondsPerFrame,
         TransitionEffect transition,
         IProgress<int>? progress,
         CancellationToken cancellationToken)
     {
-        if (framePaths.Count == 0)
+        if (frames.Count == 0)
         {
             throw new InvalidOperationException("No frames to export.");
         }
 
-        // Determine output dimensions from the first frame (scale to max width, even numbers).
+        // Determine output dimensions from the first frame, accounting for EXIF rotation.
         var sizeOpts = new BitmapFactory.Options { InJustDecodeBounds = true };
-        BitmapFactory.DecodeFile(framePaths[0], sizeOpts);
-        var scale = Math.Min(1.0, (double)MaxWidth / sizeOpts.OutWidth);
-        var width = (int)(sizeOpts.OutWidth * scale) & ~1;
-        var height = (int)(sizeOpts.OutHeight * scale) & ~1;
+        BitmapFactory.DecodeFile(frames[0].FilePath, sizeOpts);
+        // Rotations of 90 / 270 degrees swap the natural width and height.
+        var firstOrientation = GetExifOrientation(frames[0].FilePath);
+        var swapDims = firstOrientation is 5 or 6 or 7 or 8;
+        var naturalW = swapDims ? sizeOpts.OutHeight : sizeOpts.OutWidth;
+        var naturalH = swapDims ? sizeOpts.OutWidth : sizeOpts.OutHeight;
+        var scale = Math.Min(1.0, (double)MaxWidth / naturalW);
+        var width = (int)(naturalW * scale) & ~1;
+        var height = (int)(naturalH * scale) & ~1;
 
         var outputPath = System.IO.Path.Combine(FileSystem.CacheDirectory, $"timelapse_{Guid.NewGuid():N}.mp4");
 
         var format = MediaFormat.CreateVideoFormat("video/avc", width, height);
-        format.SetInteger(MediaFormat.KeyColorFormat, ColorFormatNv12);
+        format.SetInteger(MediaFormat.KeyColorFormat, ColorFormatNv21);
         format.SetInteger(MediaFormat.KeyBitRate, BitRate);
         format.SetInteger(MediaFormat.KeyFrameRate, Fps);
         format.SetInteger(MediaFormat.KeyIFrameInterval, IFrameInterval);
@@ -77,7 +82,7 @@ public sealed class VideoExportService : IVideoExportService
             ? Math.Min(framesPerImage - 1, (int)(0.4 * secondsPerFrame * Fps))
             : 0;
         var holdFrames = framesPerImage - fadeFrames;
-        var totalVideoFrames = (long)framePaths.Count * framesPerImage;
+        var totalVideoFrames = (long)frames.Count * framesPerImage;
         long encodedCount = 0;
 
         // ── helpers ──────────────────────────────────────────────────────────
@@ -166,11 +171,11 @@ public sealed class VideoExportService : IVideoExportService
 
         // ── main encode loop ──────────────────────────────────────────────────
 
-        for (var i = 0; i < framePaths.Count; i++)
+        for (var i = 0; i < frames.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            using var bmpCur = DecodeBitmap(framePaths[i], width, height);
+            using var bmpCur = RenderFrameBitmap(frames[i], width, height);
             bmpCur.GetPixels(pixCur, 0, width, 0, 0, width, height);
 
             FillNv12(pixCur, yuv, width, height);
@@ -180,9 +185,9 @@ public sealed class VideoExportService : IVideoExportService
                 Drain(false);
             }
 
-            if (fadeFrames > 0 && i < framePaths.Count - 1)
+            if (fadeFrames > 0 && i < frames.Count - 1)
             {
-                using var bmpNext = DecodeBitmap(framePaths[i + 1], width, height);
+                using var bmpNext = RenderFrameBitmap(frames[i + 1], width, height);
                 bmpNext.GetPixels(pixNext, 0, width, 0, 0, width, height);
 
                 for (var f = 0; f < fadeFrames; f++)
@@ -209,15 +214,90 @@ public sealed class VideoExportService : IVideoExportService
 
     // ── static helpers ────────────────────────────────────────────────────────
 
-    private static Bitmap DecodeBitmap(string path, int width, int height)
+    /// <summary>
+    /// Decodes <paramref name="frame"/>'s JPEG (EXIF-corrected), composites it AspectFit-centred
+    /// on a <paramref name="videoWidth"/>×<paramref name="videoHeight"/> black canvas, then
+    /// applies the stored alignment transforms (translate, rotate, scale) so the result
+    /// exactly matches the playback screen.
+    /// </summary>
+    private static Bitmap RenderFrameBitmap(FrameRenderInfo frame, int videoWidth, int videoHeight)
     {
-        using var src = BitmapFactory.DecodeFile(path)!;
-        if (src.Width == width && src.Height == height)
+        var exifOri = GetExifOrientation(frame.FilePath);
+        using var raw = BitmapFactory.DecodeFile(frame.FilePath)!;
+        var oriented = ApplyExifOrientation(raw, exifOri);
+        try
         {
-            return src.Copy(Bitmap.Config.Argb8888!, false)!;
-        }
+            // AspectFit: scale image to fill video width without cropping.
+            var fitScale = Math.Min((float)videoWidth / oriented.Width, (float)videoHeight / oriented.Height);
+            var drawW = oriented.Width * fitScale;
+            var drawH = oriented.Height * fitScale;
 
-        return Bitmap.CreateScaledBitmap(src, width, height, true)!;
+            // Convert the dp offset to video-pixel offset.
+            // Both X and Y use the same factor because AspectFit is width-limited
+            // for the typical portrait/landscape combinations encountered in this app.
+            var refW = frame.ReferenceViewWidth > 0 ? frame.ReferenceViewWidth : 360.0;
+            var pxOffsetX = (float)(frame.OffsetX * videoWidth / refW);
+            var pxOffsetY = (float)(frame.OffsetY * videoWidth / refW);
+
+            // Create output ARGB bitmap and draw via Canvas, replicating MAUI's
+            // TranslationX/Y → Rotation → Scale transform chain (all around the
+            // element centre, same as MAUI's default AnchorX/Y = 0.5).
+            var output = Bitmap.CreateBitmap(videoWidth, videoHeight, Bitmap.Config.Argb8888!)!;
+            using var canvas = new Canvas(output);
+            canvas.DrawColor(global::Android.Graphics.Color.Black);
+
+            canvas.Save();
+            canvas.Translate(videoWidth / 2f + pxOffsetX, videoHeight / 2f + pxOffsetY);
+            canvas.Rotate((float)frame.Rotation);
+            canvas.Scale((float)frame.Scale, (float)frame.Scale);
+            var dst = new global::Android.Graphics.RectF(-drawW / 2f, -drawH / 2f, drawW / 2f, drawH / 2f);
+            canvas.DrawBitmap(oriented, null, dst, null);
+            canvas.Restore();
+
+            return output;
+        }
+        finally
+        {
+            if (!ReferenceEquals(oriented, raw))
+            {
+                oriented.Recycle();
+            }
+        }
+    }
+
+    /// <summary>Returns the EXIF Orientation tag value (1–8), defaulting to 1 (normal) on any error.</summary>
+    private static int GetExifOrientation(string path)
+    {
+        try
+        {
+            var exif = new ExifInterface(path);
+            return exif.GetAttributeInt(ExifInterface.TagOrientation, 1);
+        }
+        catch
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>
+    /// Rotates/mirrors <paramref name="src"/> to match <paramref name="exifOrientation"/>.
+    /// Returns <paramref name="src"/> unchanged (same reference) when no transformation is needed.
+    /// </summary>
+    private static Bitmap ApplyExifOrientation(Bitmap src, int exifOrientation)
+    {
+        using var matrix = new Matrix();
+        switch (exifOrientation)
+        {
+            case 2: matrix.SetScale(-1f, 1f); break;                          // Flip horizontal
+            case 3: matrix.SetRotate(180f); break;                            // Rotate 180
+            case 4: matrix.SetScale(1f, -1f); break;                          // Flip vertical
+            case 5: matrix.SetRotate(90f); matrix.PostScale(-1f, 1f); break;  // Transpose
+            case 6: matrix.SetRotate(90f); break;                             // Rotate 90 CW
+            case 7: matrix.SetRotate(-90f); matrix.PostScale(-1f, 1f); break; // Transverse
+            case 8: matrix.SetRotate(-90f); break;                            // Rotate 270 CW
+            default: return src;                                              // 0 or 1 = normal
+        }
+        return Bitmap.CreateBitmap(src, 0, 0, src.Width, src.Height, matrix, true)!;
     }
 
     private static void FillNv12(int[] pixels, byte[] yuv, int width, int height)
@@ -235,7 +315,7 @@ public sealed class VideoExportService : IVideoExportService
             }
         }
 
-        // UV interleaved (NV12: U then V per 2×2 block)
+        // UV interleaved (NV21: V then U per 2×2 block — matches Android hardware encoder expectation)
         var uvBase = width * height;
         for (var j = 0; j < height; j += 2)
         {
@@ -246,8 +326,8 @@ public sealed class VideoExportService : IVideoExportService
                 var g = (p >> 8) & 0xFF;
                 var b = p & 0xFF;
                 var idx = uvBase + (j / 2) * width + i;
-                yuv[idx] = (byte)Math.Clamp((-43 * r - 85 * g + 128 * b) / 256 + 128, 0, 255);
-                yuv[idx + 1] = (byte)Math.Clamp((128 * r - 107 * g - 21 * b) / 256 + 128, 0, 255);
+                yuv[idx]     = (byte)Math.Clamp((128 * r - 107 * g - 21 * b) / 256 + 128, 0, 255); // Cr (V)
+                yuv[idx + 1] = (byte)Math.Clamp((-43 * r - 85 * g + 128 * b) / 256 + 128, 0, 255); // Cb (U)
             }
         }
     }
